@@ -30,7 +30,22 @@ export default function SupportProjects() {
   }, []);
 
   const handleShowModal = (project = {}, mode = "add") => {
-    setSelectedProject(project);
+    if (mode === "edit") {
+      setSelectedProject({
+        ...project,
+        details: {
+          ...project.details,
+          title: project.details?.title || "",
+          titleAr: project.details?.titleAr || "",
+          description1: project.details?.description1 || "",
+          description1Ar: project.details?.description1Ar || "",
+          description2: project.details?.description2 || "",
+          description2Ar: project.details?.description2Ar || "",
+        },
+      });
+    } else {
+      setSelectedProject(project);
+    }
     setModalMode(mode);
     setShowModal(true);
   };
@@ -46,39 +61,55 @@ export default function SupportProjects() {
 
     try {
       // Validate required fields
-      if (
-        !selectedProject.title ||
-        !selectedProject.description ||
-        !selectedProject.buttonLink
-      ) {
-        alert("جميع الحقول مطلوبة");
+      const requiredFields = {
+        title: "العنوان بالإنجليزية",
+        titleAr: "العنوان بالعربية",
+        description: "الوصف بالإنجليزية",
+        descriptionAr: "الوصف بالعربية",
+        buttonLink: "رابط الزر",
+      };
+
+      const missingFields = [];
+      Object.entries(requiredFields).forEach(([field, label]) => {
+        if (!selectedProject[field]) {
+          missingFields.push(label);
+        }
+      });
+
+      if (modalMode === "add" && !selectedProject.image) {
+        missingFields.push("الصورة الرئيسية");
+      }
+
+      if (missingFields.length > 0) {
+        alert(`الرجاء إكمال الحقول التالية:\n${missingFields.join("\n")}`);
         setLoading(false);
         return;
       }
 
-      // Main project data
-      formData.append("title", selectedProject.title);
-      formData.append("description", selectedProject.description);
-      formData.append("buttonLink", selectedProject.buttonLink);
+      // Append main fields
+      Object.entries(requiredFields).forEach(([field]) => {
+        formData.append(field, selectedProject[field] || "");
+      });
 
-      // Main image
+      // Append images
       if (selectedProject.image instanceof File) {
         formData.append("image", selectedProject.image);
       }
-
-      // Details data
-      const detailsData = {
-        title: selectedProject.details?.title || "",
-        description1: selectedProject.details?.description1 || "",
-        description2: selectedProject.details?.description2 || "",
-      };
-
-      formData.append("details", JSON.stringify(detailsData));
-
-      // Details image
       if (selectedProject.details?.image instanceof File) {
         formData.append("detailsImage", selectedProject.details.image);
       }
+
+      // Create and append details object
+      const details = {
+        title: selectedProject.details?.title || "",
+        titleAr: selectedProject.details?.titleAr || "",
+        description1: selectedProject.details?.description1 || "",
+        description1Ar: selectedProject.details?.description1Ar || "",
+        description2: selectedProject.details?.description2 || "",
+        description2Ar: selectedProject.details?.description2Ar || "",
+      };
+
+      formData.append("details", JSON.stringify(details));
 
       const url =
         modalMode === "add"
@@ -234,6 +265,20 @@ export default function SupportProjects() {
             />
           </div>
           <div className="mb-3">
+            <label className="form-label">العنوان بالعربية</label>
+            <input
+              type="text"
+              className="form-control"
+              value={selectedProject.titleAr || ""}
+              onChange={(e) =>
+                setSelectedProject({
+                  ...selectedProject,
+                  titleAr: e.target.value,
+                })
+              }
+            />
+          </div>
+          <div className="mb-3">
             <label className="form-label">الوصف</label>
             <textarea
               className="form-control"
@@ -242,6 +287,19 @@ export default function SupportProjects() {
                 setSelectedProject({
                   ...selectedProject,
                   description: e.target.value,
+                })
+              }
+            />
+          </div>
+          <div className="mb-3">
+            <label className="form-label">الوصف بالعربية</label>
+            <textarea
+              className="form-control"
+              value={selectedProject.descriptionAr || ""}
+              onChange={(e) =>
+                setSelectedProject({
+                  ...selectedProject,
+                  descriptionAr: e.target.value,
                 })
               }
             />
@@ -297,6 +355,23 @@ export default function SupportProjects() {
             />
           </div>
           <div className="mb-3">
+            <label className="form-label">عنوان التفاصيل بالعربية</label>
+            <input
+              type="text"
+              className="form-control"
+              value={selectedProject.details?.titleAr || ""}
+              onChange={(e) =>
+                setSelectedProject({
+                  ...selectedProject,
+                  details: {
+                    ...selectedProject.details,
+                    titleAr: e.target.value,
+                  },
+                })
+              }
+            />
+          </div>
+          <div className="mb-3">
             <label className="form-label">الوصف الأول</label>
             <textarea
               className="form-control"
@@ -313,6 +388,22 @@ export default function SupportProjects() {
             />
           </div>
           <div className="mb-3">
+            <label className="form-label">الوصف الأول بالعربية</label>
+            <textarea
+              className="form-control"
+              value={selectedProject.details?.description1Ar || ""}
+              onChange={(e) =>
+                setSelectedProject({
+                  ...selectedProject,
+                  details: {
+                    ...selectedProject.details,
+                    description1Ar: e.target.value,
+                  },
+                })
+              }
+            />
+          </div>
+          <div className="mb-3">
             <label className="form-label">الوصف الثاني</label>
             <textarea
               className="form-control"
@@ -323,6 +414,22 @@ export default function SupportProjects() {
                   details: {
                     ...selectedProject.details,
                     description2: e.target.value,
+                  },
+                })
+              }
+            />
+          </div>
+          <div className="mb-3">
+            <label className="form-label">الوصف الثاني بالعربية</label>
+            <textarea
+              className="form-control"
+              value={selectedProject.details?.description2Ar || ""}
+              onChange={(e) =>
+                setSelectedProject({
+                  ...selectedProject,
+                  details: {
+                    ...selectedProject.details,
+                    description2Ar: e.target.value,
                   },
                 })
               }

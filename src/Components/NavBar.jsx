@@ -1,8 +1,28 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Logo from "../assets/OneHeart team logo  EN PNG.png";
 import "./NavBar.css";
+import Swal from "sweetalert2";
 
 export default function NavBar() {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    Swal.fire({
+      title: "Are you sure?",
+      text: "You will be logged out!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, logout!",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        localStorage.clear();
+        window.location.href = "/login";
+      }
+    });
+  };
+
   return (
     <div className="navbar ms-5 me-5 mt-2" dir="rtl">
       <div className="navbar__logo">
@@ -13,11 +33,13 @@ export default function NavBar() {
         <Link to="/projects">المشاريع</Link>
         <Link to="/campagins">الحملات</Link>
         <Link to="/sponsorship">الكفالات</Link>
-        <Link to="/photos">الصور</Link>
-        <Link to="/videos">الفيديوهات</Link>
+        <Link to="/documentations">التوثيقات</Link>
         <Link to="/messages">الرسائل</Link>
         <Link to="/others">أخرى</Link>
-        <div className="header_controls_btn header_user trans_200">
+        <div
+          className="header_controls_btn header_user trans_200"
+          onClick={handleLogout}
+        >
           <a className="d-flex flex-row align-items-center justify-content-center text-dark">
             <svg
               xmlns="http://www.w3.org/2000/svg"

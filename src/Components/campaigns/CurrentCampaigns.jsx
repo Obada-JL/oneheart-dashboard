@@ -45,40 +45,67 @@ export default function CurrentCampaigns() {
     const formData = new FormData();
 
     try {
-      // Validate all required fields including details
-      if (
-        !selectedCampaign.title ||
-        !selectedCampaign.description ||
-        !selectedCampaign.category ||
-        !selectedCampaign.details?.title ||
-        !selectedCampaign.details?.description1 ||
-        !selectedCampaign.details?.description2
-      ) {
-        alert("جميع الحقول مطلوبة بما فيها تفاصيل الحملة");
-        setLoading(false);
-        return;
-      }
+      // Validate required fields
+      const requiredFields = {
+        title: "العنوان بالإنجليزية",
+        titleAr: "العنوان بالعربية",
+        description: "الوصف بالإنجليزية",
+        descriptionAr: "الوصف بالعربية",
+        category: "التصنيف بالإنجليزية",
+        categoryAr: "التصنيف بالعربية",
+      };
 
-      // Main campaign data
-      formData.append("title", selectedCampaign.title);
-      formData.append("description", selectedCampaign.description);
-      formData.append("category", selectedCampaign.category);
+      const missingFields = [];
+      Object.entries(requiredFields).forEach(([field, label]) => {
+        if (!selectedCampaign[field]) {
+          missingFields.push(label);
+        }
+      });
 
-      // Image validation and append
+      // Details validation
+      const requiredDetailsFields = {
+        title: "عنوان التفاصيل بالإنجليزية",
+        titleAr: "عنوان التفاصيل بالعربية",
+        description1: "الوصف الأول بالإنجليزية",
+        description1Ar: "الوصف الأول بالعربية",
+        description2: "الوصف الثاني بالإنجليزية",
+        description2Ar: "الوصف الثاني بالعربية",
+      };
+
+      Object.entries(requiredDetailsFields).forEach(([field, label]) => {
+        if (!selectedCampaign.details?.[field]) {
+          missingFields.push(label);
+        }
+      });
+
       if (modalMode === "add" && !selectedCampaign.image) {
-        alert("الصورة مطلوبة");
+        missingFields.push("صورة الحملة");
+      }
+
+      if (missingFields.length > 0) {
+        alert(`الرجاء إكمال الحقول التالية:\n${missingFields.join("\n")}`);
         setLoading(false);
         return;
       }
+
+      // Append main fields
+      Object.entries(requiredFields).forEach(([field]) => {
+        formData.append(field, selectedCampaign[field] || "");
+      });
+
+      // Append image
       if (selectedCampaign.image instanceof File) {
         formData.append("image", selectedCampaign.image);
       }
 
-      // Details data
+      // Append details
       const details = {
-        title: selectedCampaign.details.title,
-        description1: selectedCampaign.details.description1,
-        description2: selectedCampaign.details.description2,
+        title: selectedCampaign.details?.title || "",
+        titleAr: selectedCampaign.details?.titleAr || "",
+        description1: selectedCampaign.details?.description1 || "",
+        description1Ar: selectedCampaign.details?.description1Ar || "",
+        description2: selectedCampaign.details?.description2 || "",
+        description2Ar: selectedCampaign.details?.description2Ar || "",
       };
 
       formData.append("details", JSON.stringify(details));
@@ -226,7 +253,21 @@ export default function CurrentCampaigns() {
             />
           </div>
           <div className="mb-3">
-            <label className="form-label">العنوان</label>
+            <label className="form-label">العنوان بالعربية</label>
+            <input
+              type="text"
+              className="form-control"
+              value={selectedCampaign.titleAr || ""}
+              onChange={(e) =>
+                setSelectedCampaign({
+                  ...selectedCampaign,
+                  titleAr: e.target.value,
+                })
+              }
+            />
+          </div>
+          <div className="mb-3">
+            <label className="form-label">Title in English</label>
             <input
               type="text"
               className="form-control"
@@ -240,7 +281,20 @@ export default function CurrentCampaigns() {
             />
           </div>
           <div className="mb-3">
-            <label className="form-label">التصنيف</label>
+            <label className="form-label">التصنيف بالعربية</label>
+            <input
+              className="form-control"
+              value={selectedCampaign.categoryAr || ""}
+              onChange={(e) =>
+                setSelectedCampaign({
+                  ...selectedCampaign,
+                  categoryAr: e.target.value,
+                })
+              }
+            />
+          </div>
+          <div className="mb-3">
+            <label className="form-label">Category in English</label>
             <input
               className="form-control"
               value={selectedCampaign.category || ""}
@@ -269,7 +323,24 @@ export default function CurrentCampaigns() {
           {/* Details Section */}
           <h5 className="mt-4">تفاصيل الحملة</h5>
           <div className="mb-3">
-            <label className="form-label">عنوان التفاصيل</label>
+            <label className="form-label">عنوان التفاصيل بالعربية</label>
+            <input
+              type="text"
+              className="form-control"
+              value={selectedCampaign.details?.titleAr || ""}
+              onChange={(e) =>
+                setSelectedCampaign({
+                  ...selectedCampaign,
+                  details: {
+                    ...selectedCampaign.details,
+                    titleAr: e.target.value,
+                  },
+                })
+              }
+            />
+          </div>
+          <div className="mb-3">
+            <label className="form-label">Details Title in English</label>
             <input
               type="text"
               className="form-control"
@@ -302,6 +373,22 @@ export default function CurrentCampaigns() {
             />
           </div>
           <div className="mb-3">
+            <label className="form-label">الوصف الأول بالعربية</label>
+            <textarea
+              className="form-control"
+              value={selectedCampaign.details?.description1Ar || ""}
+              onChange={(e) =>
+                setSelectedCampaign({
+                  ...selectedCampaign,
+                  details: {
+                    ...selectedCampaign.details,
+                    description1Ar: e.target.value,
+                  },
+                })
+              }
+            />
+          </div>
+          <div className="mb-3">
             <label className="form-label">الوصف الثاني</label>
             <textarea
               className="form-control"
@@ -312,6 +399,22 @@ export default function CurrentCampaigns() {
                   details: {
                     ...selectedCampaign.details,
                     description2: e.target.value,
+                  },
+                })
+              }
+            />
+          </div>
+          <div className="mb-3">
+            <label className="form-label">الوصف الثاني بالعربية</label>
+            <textarea
+              className="form-control"
+              value={selectedCampaign.details?.description2Ar || ""}
+              onChange={(e) =>
+                setSelectedCampaign({
+                  ...selectedCampaign,
+                  details: {
+                    ...selectedCampaign.details,
+                    description2Ar: e.target.value,
                   },
                 })
               }

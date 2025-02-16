@@ -30,7 +30,22 @@ export default function CompletedProjects() {
   }, []);
 
   const handleShowModal = (project = {}, mode = "add") => {
-    setSelectedProject(project);
+    // If editing, map the details array to the form fields
+    if (mode === "edit" && project.details && project.details[0]) {
+      setSelectedProject({
+        ...project,
+        fund: project.details[0].fund,
+        fundAr: project.details[0].fundAr,
+        location: project.details[0].location,
+        locationAr: project.details[0].locationAr,
+        duration: project.details[0].duration,
+        durationAr: project.details[0].durationAr,
+        Beneficiary: project.details[0].Beneficiary,
+        BeneficiaryAr: project.details[0].BeneficiaryAr,
+      });
+    } else {
+      setSelectedProject(project);
+    }
     setModalMode(mode);
     setShowModal(true);
   };
@@ -45,33 +60,70 @@ export default function CompletedProjects() {
     const formData = new FormData();
 
     try {
-      // Validate required fields
-      if (
-        !selectedProject.title ||
-        !selectedProject.image ||
-        !selectedProject.category
-      ) {
-        alert("الصورة والعنوان والتصنيف مطلوبة");
+      // Validate all required fields
+      const requiredFields = {
+        title: "العنوان بالإنجليزية",
+        titleAr: "العنوان بالعربية",
+        category: "التصنيف بالإنجليزية",
+        categoryAr: "التصنيف بالعربية",
+        fund: "التمويل بالإنجليزية",
+        fundAr: "التمويل بالعربية",
+        location: "الموقع بالإنجليزية",
+        locationAr: "الموقع بالعربية",
+        duration: "المدة بالإنجليزية",
+        durationAr: "المدة بالعربية",
+        Beneficiary: "المستفيدون بالإنجليزية",
+        BeneficiaryAr: "المستفيدون بالعربية",
+      };
+
+      const missingFields = [];
+      Object.entries(requiredFields).forEach(([field, label]) => {
+        if (!selectedProject[field]) {
+          missingFields.push(label);
+        }
+      });
+
+      if (modalMode === "add" && !selectedProject.image) {
+        missingFields.push("صورة المشروع");
+      }
+
+      if (missingFields.length > 0) {
+        alert(`الرجاء إكمال الحقول التالية:\n${missingFields.join("\n")}`);
         setLoading(false);
         return;
       }
 
-      formData.append("title", selectedProject.title);
-      formData.append("category", selectedProject.category); // Add category to formData
+      // Append all text fields to formData
+      Object.entries(requiredFields).forEach(([field]) => {
+        formData.append(field, selectedProject[field] || "");
+      });
 
+      // Append image if it exists
       if (selectedProject.image instanceof File) {
         formData.append("image", selectedProject.image);
       }
 
-      // Details fields
-      const details = {
-        fund: selectedProject.fund || "",
-        location: selectedProject.location || "",
-        duration: selectedProject.duration || "",
-        Beneficiary: selectedProject.Beneficiary || "",
-      };
+      // Create details object
+      const details = [
+        {
+          fund: selectedProject.fund,
+          fundAr: selectedProject.fundAr,
+          location: selectedProject.location,
+          locationAr: selectedProject.locationAr,
+          duration: selectedProject.duration,
+          durationAr: selectedProject.durationAr,
+          Beneficiary: selectedProject.Beneficiary,
+          BeneficiaryAr: selectedProject.BeneficiaryAr,
+        },
+      ];
 
-      formData.append("details", JSON.stringify([details]));
+      // Append details as JSON string
+      formData.append("details", JSON.stringify(details));
+
+      // Log formData for debugging
+      for (let pair of formData.entries()) {
+        console.log(pair[0], pair[1]);
+      }
 
       if (modalMode === "add") {
         await axios.post(
@@ -86,6 +138,7 @@ export default function CompletedProjects() {
           { headers: { "Content-Type": "multipart/form-data" } }
         );
       }
+
       fetchProjects();
       handleCloseModal();
     } catch (error) {
@@ -207,8 +260,9 @@ export default function CompletedProjects() {
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <div className="mb-3">
-            <label className="form-label">صورة المشروع</label>
+          {/* Image Upload */}
+          <div className="mb-4">
+            <label className="form-label fw-bold">صورة المشروع</label>
             <input
               type="file"
               className="form-control"
@@ -220,85 +274,206 @@ export default function CompletedProjects() {
               }
             />
           </div>
-          <div className="mb-3">
-            <label className="form-label">العنوان</label>
-            <input
-              type="text"
-              className="form-control"
-              value={selectedProject.title || ""}
-              onChange={(e) =>
-                setSelectedProject({
-                  ...selectedProject,
-                  title: e.target.value,
-                })
-              }
-            />
+
+          {/* Title Section */}
+          <div className="mb-4">
+            <h6 className="mb-3 border-bottom pb-2">العنوان</h6>
+            <div className="mb-3">
+              <label className="form-label">بالعربية</label>
+              <input
+                type="text"
+                className="form-control"
+                value={selectedProject.titleAr || ""}
+                onChange={(e) =>
+                  setSelectedProject({
+                    ...selectedProject,
+                    titleAr: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div className="mb-3">
+              <label className="form-label">بالإنجليزية</label>
+              <input
+                type="text"
+                className="form-control"
+                value={selectedProject.title || ""}
+                onChange={(e) =>
+                  setSelectedProject({
+                    ...selectedProject,
+                    title: e.target.value,
+                  })
+                }
+              />
+            </div>
           </div>
-          <div className="mb-3">
-            <label className="form-label">التصنيف</label>
-            <input
-              className="form-control"
-              value={selectedProject.category || ""}
-              onChange={(e) =>
-                setSelectedProject({
-                  ...selectedProject,
-                  category: e.target.value,
-                })
-              }
-            />
+
+          {/* Category Section */}
+          <div className="mb-4">
+            <h6 className="mb-3 border-bottom pb-2">التصنيف</h6>
+            <div className="mb-3">
+              <label className="form-label">بالعربية</label>
+              <input
+                type="text"
+                className="form-control"
+                value={selectedProject.categoryAr || ""}
+                onChange={(e) =>
+                  setSelectedProject({
+                    ...selectedProject,
+                    categoryAr: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div className="mb-3">
+              <label className="form-label">بالإنجليزية</label>
+              <input
+                type="text"
+                className="form-control"
+                value={selectedProject.category || ""}
+                onChange={(e) =>
+                  setSelectedProject({
+                    ...selectedProject,
+                    category: e.target.value,
+                  })
+                }
+              />
+            </div>
           </div>
-          <div className="mb-3">
-            <label className="form-label">التمويل</label>
-            <input
-              type="text"
-              className="form-control"
-              value={selectedProject.fund || ""}
-              onChange={(e) =>
-                setSelectedProject({ ...selectedProject, fund: e.target.value })
-              }
-            />
+
+          {/* Details Section */}
+          <h5 className="mb-4">تفاصيل إضافية</h5>
+
+          {/* Fund */}
+          <div className="mb-4">
+            <h6 className="mb-3 border-bottom pb-2">التمويل</h6>
+            <div className="mb-3">
+              <label className="form-label">بالعربية</label>
+              <input
+                type="text"
+                className="form-control"
+                value={selectedProject.fundAr || ""}
+                onChange={(e) =>
+                  setSelectedProject({
+                    ...selectedProject,
+                    fundAr: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div className="mb-3">
+              <label className="form-label">بالإنجليزية</label>
+              <input
+                type="text"
+                className="form-control"
+                value={selectedProject.fund || ""}
+                onChange={(e) =>
+                  setSelectedProject({
+                    ...selectedProject,
+                    fund: e.target.value,
+                  })
+                }
+              />
+            </div>
           </div>
-          <div className="mb-3">
-            <label className="form-label">الموقع</label>
-            <input
-              type="text"
-              className="form-control"
-              value={selectedProject.location || ""}
-              onChange={(e) =>
-                setSelectedProject({
-                  ...selectedProject,
-                  location: e.target.value,
-                })
-              }
-            />
+
+          {/* Location */}
+          <div className="mb-4">
+            <h6 className="mb-3 border-bottom pb-2">الموقع</h6>
+            <div className="mb-3">
+              <label className="form-label">بالعربية</label>
+              <input
+                type="text"
+                className="form-control"
+                value={selectedProject.locationAr || ""}
+                onChange={(e) =>
+                  setSelectedProject({
+                    ...selectedProject,
+                    locationAr: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div className="mb-3">
+              <label className="form-label">بالإنجليزية</label>
+              <input
+                type="text"
+                className="form-control"
+                value={selectedProject.location || ""}
+                onChange={(e) =>
+                  setSelectedProject({
+                    ...selectedProject,
+                    location: e.target.value,
+                  })
+                }
+              />
+            </div>
           </div>
-          <div className="mb-3">
-            <label className="form-label">المدة</label>
-            <input
-              type="text"
-              className="form-control"
-              value={selectedProject.duration || ""}
-              onChange={(e) =>
-                setSelectedProject({
-                  ...selectedProject,
-                  duration: e.target.value,
-                })
-              }
-            />
+
+          {/* Duration */}
+          <div className="mb-4">
+            <h6 className="mb-3 border-bottom pb-2">المدة</h6>
+            <div className="mb-3">
+              <label className="form-label">بالعربية</label>
+              <input
+                type="text"
+                className="form-control"
+                value={selectedProject.durationAr || ""}
+                onChange={(e) =>
+                  setSelectedProject({
+                    ...selectedProject,
+                    durationAr: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div className="mb-3">
+              <label className="form-label">بالإنجليزية</label>
+              <input
+                type="text"
+                className="form-control"
+                value={selectedProject.duration || ""}
+                onChange={(e) =>
+                  setSelectedProject({
+                    ...selectedProject,
+                    duration: e.target.value,
+                  })
+                }
+              />
+            </div>
           </div>
-          <div className="mb-3">
-            <label className="form-label">المستفيدون</label>
-            <input
-              type="text"
-              className="form-control"
-              value={selectedProject.Beneficiary || ""}
-              onChange={(e) =>
-                setSelectedProject({
-                  ...selectedProject,
-                  Beneficiary: e.target.value,
-                })
-              }
-            />
+
+          {/* Beneficiary */}
+          <div className="mb-4">
+            <h6 className="mb-3 border-bottom pb-2">المستفيدون</h6>
+            <div className="mb-3">
+              <label className="form-label">بالعربية</label>
+              <input
+                type="text"
+                className="form-control"
+                value={selectedProject.BeneficiaryAr || ""}
+                onChange={(e) =>
+                  setSelectedProject({
+                    ...selectedProject,
+                    BeneficiaryAr: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div className="mb-3">
+              <label className="form-label">بالإنجليزية</label>
+              <input
+                type="text"
+                className="form-control"
+                value={selectedProject.Beneficiary || ""}
+                onChange={(e) =>
+                  setSelectedProject({
+                    ...selectedProject,
+                    Beneficiary: e.target.value,
+                  })
+                }
+              />
+            </div>
           </div>
         </Modal.Body>
         <Modal.Footer>
@@ -336,27 +511,66 @@ export default function CompletedProjects() {
               <div className="mb-4">
                 <h5 className="border-bottom pb-2">معلومات المشروع</h5>
                 <div className="row">
-                  <div className="col-md-6">
-                    <p>
-                      <strong>العنوان:</strong> {viewProject.title}
-                    </p>
-                    <p>
-                      <strong>التصنيف:</strong> {viewProject.category}
-                    </p>
-                    <p>
-                      <strong>التمويل:</strong> {viewProject.details[0]?.fund}
-                    </p>
-                    <p>
-                      <strong>الموقع:</strong>{" "}
-                      {viewProject.details[0]?.location}
-                    </p>
-                    <p>
-                      <strong>المدة:</strong> {viewProject.details[0]?.duration}
-                    </p>
-                    <p>
-                      <strong>المستفيدون:</strong>{" "}
-                      {viewProject.details[0]?.Beneficiary}
-                    </p>
+                  <div className="col-12">
+                    <div className="mb-3">
+                      <h6>العنوان</h6>
+                      <p className="text-muted">
+                        بالعربية: {viewProject.titleAr}
+                      </p>
+                      <p className="text-muted">
+                        بالإنجليزية: {viewProject.title}
+                      </p>
+                    </div>
+
+                    <div className="mb-3">
+                      <h6>التصنيف</h6>
+                      <p className="text-muted">
+                        بالعربية: {viewProject.categoryAr}
+                      </p>
+                      <p className="text-muted">
+                        بالإنجليزية: {viewProject.category}
+                      </p>
+                    </div>
+
+                    <div className="mb-3">
+                      <h6>التمويل</h6>
+                      <p className="text-muted">
+                        بالعربية: {viewProject.details[0]?.fundAr}
+                      </p>
+                      <p className="text-muted">
+                        بالإنجليزية: {viewProject.details[0]?.fund}
+                      </p>
+                    </div>
+
+                    <div className="mb-3">
+                      <h6>الموقع</h6>
+                      <p className="text-muted">
+                        بالعربية: {viewProject.details[0]?.locationAr}
+                      </p>
+                      <p className="text-muted">
+                        بالإنجليزية: {viewProject.details[0]?.location}
+                      </p>
+                    </div>
+
+                    <div className="mb-3">
+                      <h6>المدة</h6>
+                      <p className="text-muted">
+                        بالعربية: {viewProject.details[0]?.durationAr}
+                      </p>
+                      <p className="text-muted">
+                        بالإنجليزية: {viewProject.details[0]?.duration}
+                      </p>
+                    </div>
+
+                    <div className="mb-3">
+                      <h6>المستفيدون</h6>
+                      <p className="text-muted">
+                        بالعربية: {viewProject.details[0]?.BeneficiaryAr}
+                      </p>
+                      <p className="text-muted">
+                        بالإنجليزية: {viewProject.details[0]?.Beneficiary}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>

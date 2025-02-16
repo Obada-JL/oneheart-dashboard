@@ -31,7 +31,22 @@ export default function CurrentProjects() {
   }, []);
 
   const handleShowModal = (project = {}, mode = "add") => {
-    setSelectedProject(project);
+    if (mode === "edit") {
+      setSelectedProject({
+        ...project,
+        details: {
+          ...project.details,
+          title: project.details?.title || "",
+          titleAr: project.details?.titleAr || "",
+          description1: project.details?.description1 || "",
+          description1Ar: project.details?.description1Ar || "",
+          description2: project.details?.description2 || "",
+          description2Ar: project.details?.description2Ar || "",
+        },
+      });
+    } else {
+      setSelectedProject(project);
+    }
     setModalMode(mode);
     setShowModal(true);
   };
@@ -47,78 +62,69 @@ export default function CurrentProjects() {
 
     try {
       // Validate required fields
-      if (
-        !selectedProject.title ||
-        !selectedProject.description ||
-        !selectedProject.buttonLink
-      ) {
-        alert("جميع الحقول مطلوبة");
+      const requiredFields = {
+        title: "العنوان بالإنجليزية",
+        titleAr: "العنوان بالعربية",
+        description: "الوصف بالإنجليزية",
+        descriptionAr: "الوصف بالعربية",
+        buttonLink: "رابط الزر",
+      };
+
+      const missingFields = [];
+      Object.entries(requiredFields).forEach(([field, label]) => {
+        if (!selectedProject[field]) {
+          missingFields.push(label);
+        }
+      });
+
+      // Check for required images
+      if (modalMode === "add") {
+        if (!selectedProject.image) missingFields.push("الصورة الرئيسية");
+        if (!selectedProject.details?.image)
+          missingFields.push("صورة التفاصيل");
+      }
+
+      if (missingFields.length > 0) {
+        alert(`الرجاء إكمال الحقول التالية:\n${missingFields.join("\n")}`);
         setLoading(false);
         return;
       }
 
-      // Main project data
-      formData.append("title", selectedProject.title);
-      formData.append("description", selectedProject.description);
-      formData.append("buttonLink", selectedProject.buttonLink);
+      // Append main fields
+      Object.entries(requiredFields).forEach(([field]) => {
+        formData.append(field, selectedProject[field] || "");
+      });
 
-      // Main image
-      if (modalMode === "add" && !selectedProject.image) {
-        alert("الصورة مطلوبة");
-        setLoading(false);
-        return;
-      }
+      // Append images
       if (selectedProject.image instanceof File) {
         formData.append("image", selectedProject.image);
       }
-
-      // Details data
-      if (selectedProject.details) {
-        const detailsData = {
-          title: selectedProject.details.title,
-          description1: selectedProject.details.description1,
-          description2: selectedProject.details.description2,
-        };
-
-        // Validate details
-        if (
-          !detailsData.title ||
-          !detailsData.description1 ||
-          !detailsData.description2
-        ) {
-          alert("جميع حقول التفاصيل مطلوبة");
-          setLoading(false);
-          return;
-        }
-
-        formData.append("details", JSON.stringify(detailsData));
-
-        // Details image
-        if (modalMode === "add" && !selectedProject.details.image) {
-          alert("صورة التفاصيل مطلوبة");
-          setLoading(false);
-          return;
-        }
-        if (selectedProject.details.image instanceof File) {
-          formData.append("detailsImage", selectedProject.details.image);
-        }
+      if (selectedProject.details?.image instanceof File) {
+        formData.append("detailsImage", selectedProject.details.image);
       }
 
-      if (modalMode === "add") {
-        await axios.post(
-          "http://localhost:3500/api/current-projects",
-          formData,
-          {
-            headers: { "Content-Type": "multipart/form-data" },
-          }
-        );
-      } else {
-        await axios.put(
-          `http://localhost:3500/api/current-projects/${selectedProject._id}`,
-          formData,
-          { headers: { "Content-Type": "multipart/form-data" } }
-        );
-      }
+      // Create details object
+      const details = {
+        title: selectedProject.details?.title || "",
+        titleAr: selectedProject.details?.titleAr || "",
+        description1: selectedProject.details?.description1 || "",
+        description1Ar: selectedProject.details?.description1Ar || "",
+        description2: selectedProject.details?.description2 || "",
+        description2Ar: selectedProject.details?.description2Ar || "",
+      };
+
+      formData.append("details", JSON.stringify(details));
+
+      const url =
+        modalMode === "add"
+          ? "http://localhost:3500/api/current-projects"
+          : `http://localhost:3500/api/current-projects/${selectedProject._id}`;
+
+      const method = modalMode === "add" ? "post" : "put";
+
+      await axios[method](url, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
       fetchProjects();
       handleCloseModal();
@@ -234,21 +240,26 @@ export default function CurrentProjects() {
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
+          {/* Main Project Info */}
           <div className="mb-3">
-            <label className="form-label">صورة المشروع</label>
+            <label className="form-label">
+              العنوان بالعربية <span className="text-danger">*</span>
+            </label>
             <input
-              type="file"
+              type="text"
               className="form-control"
+              value={selectedProject.titleAr || ""}
               onChange={(e) =>
                 setSelectedProject({
                   ...selectedProject,
-                  image: e.target.files[0],
+                  titleAr: e.target.value,
                 })
               }
+              required
             />
           </div>
           <div className="mb-3">
-            <label className="form-label">العنوان</label>
+            <label className="form-label">Title in English</label>
             <input
               type="text"
               className="form-control"
@@ -259,10 +270,41 @@ export default function CurrentProjects() {
                   title: e.target.value,
                 })
               }
+              required
             />
           </div>
           <div className="mb-3">
-            <label className="form-label">الوصف</label>
+            <label className="form-label">
+              رابط الزر <span className="text-danger">*</span>
+            </label>
+            <input
+              type="text"
+              className="form-control"
+              value={selectedProject.buttonLink || ""}
+              onChange={(e) =>
+                setSelectedProject({
+                  ...selectedProject,
+                  buttonLink: e.target.value,
+                })
+              }
+              required
+            />
+          </div>
+          <div className="mb-3">
+            <label className="form-label">الوصف بالعربية</label>
+            <textarea
+              className="form-control"
+              value={selectedProject.descriptionAr || ""}
+              onChange={(e) =>
+                setSelectedProject({
+                  ...selectedProject,
+                  descriptionAr: e.target.value,
+                })
+              }
+            />
+          </div>
+          <div className="mb-3">
+            <label className="form-label">Description in English</label>
             <textarea
               className="form-control"
               value={selectedProject.description || ""}
@@ -274,41 +316,47 @@ export default function CurrentProjects() {
               }
             />
           </div>
+
+          {/* Main Project Image */}
           <div className="mb-3">
-            <label className="form-label">رابط الزر</label>
+            <label className="form-label">
+              الصورة الرئيسية <span className="text-danger">*</span>
+            </label>
             <input
-              type="text"
+              type="file"
               className="form-control"
-              value={selectedProject.buttonLink || ""}
+              accept="image/*"
               onChange={(e) =>
                 setSelectedProject({
                   ...selectedProject,
-                  buttonLink: e.target.value,
+                  image: e.target.files[0],
                 })
               }
+              required
             />
           </div>
 
           {/* Details Section */}
-          <h5 className="mt-4">تفاصيل المشروع</h5>
+          <h5 className="mt-4 mb-3">تفاصيل المشروع</h5>
           <div className="mb-3">
-            <label className="form-label">صورة التفاصيل</label>
+            <label className="form-label">عنوان التفاصيل بالعربية</label>
             <input
-              type="file"
+              type="text"
               className="form-control"
+              value={selectedProject.details?.titleAr || ""}
               onChange={(e) =>
                 setSelectedProject({
                   ...selectedProject,
                   details: {
                     ...selectedProject.details,
-                    image: e.target.files[0],
+                    titleAr: e.target.value,
                   },
                 })
               }
             />
           </div>
           <div className="mb-3">
-            <label className="form-label">عنوان التفاصيل</label>
+            <label className="form-label">Details Title in English</label>
             <input
               type="text"
               className="form-control"
@@ -325,7 +373,23 @@ export default function CurrentProjects() {
             />
           </div>
           <div className="mb-3">
-            <label className="form-label">الوصف الأول</label>
+            <label className="form-label">الوصف الأول بالعربية</label>
+            <textarea
+              className="form-control"
+              value={selectedProject.details?.description1Ar || ""}
+              onChange={(e) =>
+                setSelectedProject({
+                  ...selectedProject,
+                  details: {
+                    ...selectedProject.details,
+                    description1Ar: e.target.value,
+                  },
+                })
+              }
+            />
+          </div>
+          <div className="mb-3">
+            <label className="form-label">First Description in English</label>
             <textarea
               className="form-control"
               value={selectedProject.details?.description1 || ""}
@@ -341,7 +405,23 @@ export default function CurrentProjects() {
             />
           </div>
           <div className="mb-3">
-            <label className="form-label">الوصف الثاني</label>
+            <label className="form-label">الوصف الثاني بالعربية</label>
+            <textarea
+              className="form-control"
+              value={selectedProject.details?.description2Ar || ""}
+              onChange={(e) =>
+                setSelectedProject({
+                  ...selectedProject,
+                  details: {
+                    ...selectedProject.details,
+                    description2Ar: e.target.value,
+                  },
+                })
+              }
+            />
+          </div>
+          <div className="mb-3">
+            <label className="form-label">Second Description in English</label>
             <textarea
               className="form-control"
               value={selectedProject.details?.description2 || ""}
@@ -354,6 +434,28 @@ export default function CurrentProjects() {
                   },
                 })
               }
+            />
+          </div>
+
+          {/* Details Image */}
+          <div className="mb-3">
+            <label className="form-label">
+              صورة التفاصيل <span className="text-danger">*</span>
+            </label>
+            <input
+              type="file"
+              className="form-control"
+              accept="image/*"
+              onChange={(e) =>
+                setSelectedProject({
+                  ...selectedProject,
+                  details: {
+                    ...selectedProject.details,
+                    image: e.target.files[0],
+                  },
+                })
+              }
+              required
             />
           </div>
         </Modal.Body>
