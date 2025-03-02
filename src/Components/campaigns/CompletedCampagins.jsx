@@ -16,11 +16,12 @@ export default function CompletedCampaigns() {
     setLoading(true);
     try {
       const response = await axios.get(
-        "http://localhost:3500/api/completed-campagins"
+        "http://localhost:3500/api/completed-campaigns"
       );
       setCampaigns(response.data);
     } catch (error) {
       console.error("Error fetching campaigns:", error);
+      alert("خطأ في جلب البيانات");
     } finally {
       setLoading(false);
     }
@@ -33,11 +34,22 @@ export default function CompletedCampaigns() {
   // Handle modal display
   const handleShowModal = (campaign = {}, mode = "add") => {
     if (mode === "edit") {
+      const details = campaign.details?.[0] || {};
       setSelectedCampaign({
-        ...campaign,
-        details: {
-          ...campaign.details,
-        },
+        _id: campaign._id,
+        title: campaign.title || '',
+        titleAr: campaign.titleAr || '',
+        category: campaign.category || '',
+        categoryAr: campaign.categoryAr || '',
+        image: campaign.image || '',
+        fund: details.fund || '',
+        fundAr: details.fundAr || '',
+        location: details.location || '',
+        locationAr: details.locationAr || '',
+        duration: details.duration || '',
+        durationAr: details.durationAr || '',
+        Beneficiary: details.Beneficiary || '',
+        BeneficiaryAr: details.BeneficiaryAr || '',
       });
     } else {
       setSelectedCampaign({});
@@ -57,75 +69,42 @@ export default function CompletedCampaigns() {
     const formData = new FormData();
 
     try {
-      const requiredFields = {
-        title: "العنوان بالإنجليزية",
-        titleAr: "العنوان بالعربية",
-        category: "التصنيف بالإنجليزية",
-        categoryAr: "التصنيف بالعربية",
-        fund: "التمويل بالإنجليزية",
-        fundAr: "التمويل بالعربية",
-        location: "الموقع بالإنجليزية",
-        locationAr: "الموقع بالعربية",
-        duration: "المدة بالإنجليزية",
-        durationAr: "المدة بالعربية",
-        Beneficiary: "المستفيدون بالإنجليزية",
-        BeneficiaryAr: "المستفيدون بالعربية",
-      };
+      // Append main fields
+      formData.append('title', selectedCampaign.title || '');
+      formData.append('titleAr', selectedCampaign.titleAr || '');
+      formData.append('category', selectedCampaign.category || '');
+      formData.append('categoryAr', selectedCampaign.categoryAr || '');
 
-      // Validate required fields
-      for (const [key, value] of Object.entries(requiredFields)) {
-        if (!selectedCampaign[key]) {
-          alert(`${value} مطلوب`);
-          setLoading(false);
-          return;
-        }
-      }
-
-      // Main campaign data
-      formData.append("title", selectedCampaign.title);
-      formData.append("titleAr", selectedCampaign.titleAr);
-      formData.append("category", selectedCampaign.category);
-      formData.append("categoryAr", selectedCampaign.categoryAr);
-
-      // Image validation for new campaigns
-      if (modalMode === "add" && !selectedCampaign.image) {
-        alert("الصورة مطلوبة");
-        setLoading(false);
-        return;
-      }
+      // Append image if new one is selected
       if (selectedCampaign.image instanceof File) {
         formData.append("image", selectedCampaign.image);
       }
 
-      // Details data
-      const details = [
-        {
-          fund: selectedCampaign.fund,
-          fundAr: selectedCampaign.fundAr,
-          location: selectedCampaign.location,
-          locationAr: selectedCampaign.locationAr,
-          duration: selectedCampaign.duration,
-          durationAr: selectedCampaign.durationAr,
-          Beneficiary: selectedCampaign.Beneficiary,
-          BeneficiaryAr: selectedCampaign.BeneficiaryAr,
-        },
-      ];
+      // Create details object
+      const details = {
+        fund: selectedCampaign.fund || '',
+        fundAr: selectedCampaign.fundAr || '',
+        location: selectedCampaign.location || '',
+        locationAr: selectedCampaign.locationAr || '',
+        duration: selectedCampaign.duration || '',
+        durationAr: selectedCampaign.durationAr || '',
+        Beneficiary: selectedCampaign.Beneficiary || '',
+        BeneficiaryAr: selectedCampaign.BeneficiaryAr || '',
+      };
 
-      formData.append("details", JSON.stringify(details));
+      // Append details as JSON string
+      formData.append("details", JSON.stringify([details]));
 
-      if (modalMode === "add") {
-        await axios.post(
-          "http://localhost:3500/api/completed-campagins",
-          formData,
-          { headers: { "Content-Type": "multipart/form-data" } }
-        );
-      } else {
-        await axios.put(
-          `http://localhost:3500/api/completed-campagins/${selectedCampaign._id}`,
-          formData,
-          { headers: { "Content-Type": "multipart/form-data" } }
-        );
-      }
+      const url = modalMode === "add"
+        ? "http://localhost:3500/api/completed-campaigns"
+        : `http://localhost:3500/api/completed-campaigns/${selectedCampaign._id}`;
+
+      await axios({
+        method: modalMode === "add" ? "post" : "put",
+        url,
+        data: formData,
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
       fetchCampaigns();
       handleCloseModal();
@@ -142,12 +121,11 @@ export default function CompletedCampaigns() {
     if (window.confirm("هل أنت متأكد من حذف هذه الحملة؟")) {
       setLoading(true);
       try {
-        await axios.delete(
-          `http://localhost:3500/api/completed-campagins/${id}`
-        );
+        await axios.delete(`http://localhost:3500/api/completed-campaigns/${id}`);
         fetchCampaigns();
       } catch (error) {
         console.error("Error deleting campaign:", error);
+        alert("خطأ في حذف الحملة");
       } finally {
         setLoading(false);
       }
@@ -168,9 +146,9 @@ export default function CompletedCampaigns() {
   return (
     <div className="p-4 bg-light" dir="rtl">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1 className="fw-bold">الحملات المنجزة</h1>
+        <h1 className="fw-bold">الحملات المكتملة</h1>
         <Button variant="primary" onClick={() => handleShowModal({}, "add")}>
-          إضافة حملة منجزة
+          إضافة حملة جديدة
         </Button>
       </div>
 
@@ -187,6 +165,7 @@ export default function CompletedCampaigns() {
                 <th>الصورة</th>
                 <th>العنوان</th>
                 <th>التصنيف</th>
+                <th>التفاصيل</th>
                 <th>الإجراءات</th>
               </tr>
             </thead>
@@ -197,39 +176,42 @@ export default function CompletedCampaigns() {
                     <img
                       src={`http://localhost:3500/uploads/completed-campaigns/${campaign.image}`}
                       alt={campaign.title}
-                      style={{
-                        width: "50px",
-                        height: "50px",
-                        objectFit: "cover",
-                      }}
+                      style={{ width: "100px", height: "60px", objectFit: "cover" }}
                     />
                   </td>
-                  <td>{campaign.title}</td>
-                  <td>{campaign.category}</td>
                   <td>
-                    <div className="d-flex gap-2">
-                      <Button
-                        variant="outline-info"
-                        size="sm"
-                        onClick={() => handleShowViewModal(campaign)}
-                      >
-                        عرض
-                      </Button>
-                      <Button
-                        variant="outline-primary"
-                        size="sm"
-                        onClick={() => handleShowModal(campaign, "edit")}
-                      >
-                        تعديل
-                      </Button>
-                      <Button
-                        variant="outline-danger"
-                        size="sm"
-                        onClick={() => handleDeleteCampaign(campaign._id)}
-                      >
-                        حذف
-                      </Button>
-                    </div>
+                    <div>{campaign.titleAr}</div>
+                    <small className="text-muted">{campaign.title}</small>
+                  </td>
+                  <td>
+                    <div>{campaign.categoryAr}</div>
+                    <small className="text-muted">{campaign.category}</small>
+                  </td>
+                  <td>
+                    {campaign.details.map((detail, index) => (
+                      <div key={index} className="mb-2">
+                        <div>المستفيدون: {detail.BeneficiaryAr}</div>
+                        <div>الموقع: {detail.locationAr}</div>
+                        <div>المدة: {detail.durationAr}</div>
+                      </div>
+                    ))}
+                  </td>
+                  <td>
+                    <Button
+                      variant="outline-primary"
+                      size="sm"
+                      className="me-2"
+                      onClick={() => handleShowModal(campaign, "edit")}
+                    >
+                      تعديل
+                    </Button>
+                    <Button
+                      variant="outline-danger"
+                      size="sm"
+                      onClick={() => handleDeleteCampaign(campaign._id)}
+                    >
+                      حذف
+                    </Button>
                   </td>
                 </tr>
               ))}
@@ -242,7 +224,7 @@ export default function CompletedCampaigns() {
       <Modal show={showModal} onHide={handleCloseModal} size="lg" dir="rtl">
         <Modal.Header closeButton>
           <Modal.Title>
-            {modalMode === "add" ? "إضافة حملة منجزة" : "تعديل الحملة"}
+            {modalMode === "add" ? "إضافة حملة جديدة" : "تعديل الحملة"}
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
@@ -260,21 +242,7 @@ export default function CompletedCampaigns() {
             />
           </div>
           <div className="mb-3">
-            <label className="form-label">عنوان الحملة (بالإنجليزية)</label>
-            <input
-              type="text"
-              className="form-control"
-              value={selectedCampaign.title || ""}
-              onChange={(e) =>
-                setSelectedCampaign({
-                  ...selectedCampaign,
-                  title: e.target.value,
-                })
-              }
-            />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">عنوان الحملة (بالعربية)</label>
+            <label className="form-label">العنوان بالعربية</label>
             <input
               type="text"
               className="form-control"
@@ -288,28 +256,24 @@ export default function CompletedCampaigns() {
             />
           </div>
           <div className="mb-3">
-            <label className="form-label">التصنيف (بالإنجليزية)</label>
-            <select
-              className="form-select"
-              value={selectedCampaign.category || ""}
+            <label className="form-label">Title in English</label>
+            <input
+              type="text"
+              className="form-control"
+              value={selectedCampaign.title || ""}
               onChange={(e) =>
                 setSelectedCampaign({
                   ...selectedCampaign,
-                  category: e.target.value,
+                  title: e.target.value,
                 })
               }
-            >
-              <option value="">اختر التصنيف</option>
-              <option value="صحة">صحة</option>
-              <option value="تعليم">تعليم</option>
-              <option value="إغاثة">إغاثة</option>
-              <option value="تنمية">تنمية</option>
-            </select>
+            />
           </div>
           <div className="mb-3">
-            <label className="form-label">التصنيف (بالعربية)</label>
-            <select
-              className="form-select"
+            <label className="form-label">التصنيف بالعربية</label>
+            <input
+              type="text"
+              className="form-control"
               value={selectedCampaign.categoryAr || ""}
               onChange={(e) =>
                 setSelectedCampaign({
@@ -317,129 +281,172 @@ export default function CompletedCampaigns() {
                   categoryAr: e.target.value,
                 })
               }
-            >
-              <option value="">اختر التصنيف</option>
-              <option value="صحة">صحة</option>
-              <option value="تعليم">تعليم</option>
-              <option value="إغاثة">إغاثة</option>
-              <option value="تنمية">تنمية</option>
-            </select>
+            />
+          </div>
+          <div className="mb-3">
+            <label className="form-label">Category in English</label>
+            <input
+              type="text"
+              className="form-control"
+              value={selectedCampaign.category || ""}
+              onChange={(e) =>
+                setSelectedCampaign({
+                  ...selectedCampaign,
+                  category: e.target.value,
+                })
+              }
+            />
           </div>
 
           {/* Details Section */}
           <h5 className="mt-4">تفاصيل الحملة</h5>
-          <div className="mb-3">
-            <label className="form-label">قيمة التمويل (بالإنجليزية)</label>
-            <input
-              type="text"
-              className="form-control"
-              value={selectedCampaign.fund || ""}
-              onChange={(e) =>
-                setSelectedCampaign({
-                  ...selectedCampaign,
-                  fund: e.target.value,
-                })
-              }
-            />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">قيمة التمويل (بالعربية)</label>
-            <input
-              type="text"
-              className="form-control"
-              value={selectedCampaign.fundAr || ""}
-              onChange={(e) =>
-                setSelectedCampaign({
-                  ...selectedCampaign,
-                  fundAr: e.target.value,
-                })
-              }
-            />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">الموقع (بالإنجليزية)</label>
-            <input
-              type="text"
-              className="form-control"
-              value={selectedCampaign.location || ""}
-              onChange={(e) =>
-                setSelectedCampaign({
-                  ...selectedCampaign,
-                  location: e.target.value,
-                })
-              }
-            />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">الموقع (بالعربية)</label>
-            <input
-              type="text"
-              className="form-control"
-              value={selectedCampaign.locationAr || ""}
-              onChange={(e) =>
-                setSelectedCampaign({
-                  ...selectedCampaign,
-                  locationAr: e.target.value,
-                })
-              }
-            />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">المدة (بالإنجليزية)</label>
-            <input
-              type="text"
-              className="form-control"
-              value={selectedCampaign.duration || ""}
-              onChange={(e) =>
-                setSelectedCampaign({
-                  ...selectedCampaign,
-                  duration: e.target.value,
-                })
-              }
-            />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">المدة (بالعربية)</label>
-            <input
-              type="text"
-              className="form-control"
-              value={selectedCampaign.durationAr || ""}
-              onChange={(e) =>
-                setSelectedCampaign({
-                  ...selectedCampaign,
-                  durationAr: e.target.value,
-                })
-              }
-            />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">المستفيدون (بالإنجليزية)</label>
-            <input
-              type="text"
-              className="form-control"
-              value={selectedCampaign.Beneficiary || ""}
-              onChange={(e) =>
-                setSelectedCampaign({
-                  ...selectedCampaign,
-                  Beneficiary: e.target.value,
-                })
-              }
-            />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">المستفيدون (بالعربية)</label>
-            <input
-              type="text"
-              className="form-control"
-              value={selectedCampaign.BeneficiaryAr || ""}
-              onChange={(e) =>
-                setSelectedCampaign({
-                  ...selectedCampaign,
-                  BeneficiaryAr: e.target.value,
-                })
-              }
-            />
-          </div>
+          {selectedCampaign.details?.map((detail, index) => (
+            <div key={index} className="border p-3 mb-3 rounded">
+              <h6>التفاصيل {index + 1}</h6>
+              
+              {/* Fund fields */}
+              <div className="mb-3">
+                <label className="form-label">التمويل بالعربية</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={detail.fundAr || ""}
+                  onChange={(e) => {
+                    const newDetails = [...selectedCampaign.details];
+                    newDetails[index] = { ...detail, fundAr: e.target.value };
+                    setSelectedCampaign({ ...selectedCampaign, details: newDetails });
+                  }}
+                />
+              </div>
+              <div className="mb-3">
+                <label className="form-label">Fund in English</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={detail.fund || ""}
+                  onChange={(e) => {
+                    const newDetails = [...selectedCampaign.details];
+                    newDetails[index] = { ...detail, fund: e.target.value };
+                    setSelectedCampaign({ ...selectedCampaign, details: newDetails });
+                  }}
+                />
+              </div>
+
+              {/* Location fields */}
+              <div className="mb-3">
+                <label className="form-label">الموقع بالعربية</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={detail.locationAr || ""}
+                  onChange={(e) => {
+                    const newDetails = [...selectedCampaign.details];
+                    newDetails[index] = { ...detail, locationAr: e.target.value };
+                    setSelectedCampaign({ ...selectedCampaign, details: newDetails });
+                  }}
+                />
+              </div>
+              <div className="mb-3">
+                <label className="form-label">Location in English</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={detail.location || ""}
+                  onChange={(e) => {
+                    const newDetails = [...selectedCampaign.details];
+                    newDetails[index] = { ...detail, location: e.target.value };
+                    setSelectedCampaign({ ...selectedCampaign, details: newDetails });
+                  }}
+                />
+              </div>
+
+              {/* Duration fields */}
+              <div className="mb-3">
+                <label className="form-label">المدة بالعربية</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={detail.durationAr || ""}
+                  onChange={(e) => {
+                    const newDetails = [...selectedCampaign.details];
+                    newDetails[index] = { ...detail, durationAr: e.target.value };
+                    setSelectedCampaign({ ...selectedCampaign, details: newDetails });
+                  }}
+                />
+              </div>
+              <div className="mb-3">
+                <label className="form-label">Duration in English</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={detail.duration || ""}
+                  onChange={(e) => {
+                    const newDetails = [...selectedCampaign.details];
+                    newDetails[index] = { ...detail, duration: e.target.value };
+                    setSelectedCampaign({ ...selectedCampaign, details: newDetails });
+                  }}
+                />
+              </div>
+
+              {/* Beneficiary fields */}
+              <div className="mb-3">
+                <label className="form-label">المستفيدون بالعربية</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={detail.BeneficiaryAr || ""}
+                  onChange={(e) => {
+                    const newDetails = [...selectedCampaign.details];
+                    newDetails[index] = { ...detail, BeneficiaryAr: e.target.value };
+                    setSelectedCampaign({ ...selectedCampaign, details: newDetails });
+                  }}
+                />
+              </div>
+              <div className="mb-3">
+                <label className="form-label">Beneficiaries in English</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={detail.Beneficiary || ""}
+                  onChange={(e) => {
+                    const newDetails = [...selectedCampaign.details];
+                    newDetails[index] = { ...detail, Beneficiary: e.target.value };
+                    setSelectedCampaign({ ...selectedCampaign, details: newDetails });
+                  }}
+                />
+              </div>
+
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => {
+                  const newDetails = selectedCampaign.details.filter((_, i) => i !== index);
+                  setSelectedCampaign({ ...selectedCampaign, details: newDetails });
+                }}
+              >
+                حذف هذه التفاصيل
+              </Button>
+            </div>
+          ))}
+
+          <Button
+            variant="success"
+            onClick={() => {
+              const newDetails = [...(selectedCampaign.details || []), {
+                fund: "",
+                fundAr: "",
+                location: "",
+                locationAr: "",
+                duration: "",
+                durationAr: "",
+                Beneficiary: "",
+                BeneficiaryAr: ""
+              }];
+              setSelectedCampaign({ ...selectedCampaign, details: newDetails });
+            }}
+          >
+            إضافة تفاصيل جديدة
+          </Button>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={handleCloseModal}>

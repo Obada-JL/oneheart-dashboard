@@ -9,6 +9,8 @@ export default function SponsorshipsPage() {
   const [selectedSponsorship, setSelectedSponsorship] = useState({});
   const [modalMode, setModalMode] = useState("add");
   const [loading, setLoading] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [viewSponsorship, setViewSponsorship] = useState(null);
 
   const fetchSponsorships = async () => {
     setLoading(true);
@@ -29,7 +31,39 @@ export default function SponsorshipsPage() {
   }, []);
 
   const handleShowModal = (sponsorship = {}, mode = "add") => {
-    setSelectedSponsorship(sponsorship);
+    if (mode === "edit") {
+      setSelectedSponsorship({
+        ...sponsorship,
+        details: sponsorship.details || {
+          title: "",
+          titleAr: "",
+          description1: "",
+          description1Ar: "",
+          description2: "",
+          description2Ar: "",
+        }
+      });
+    } else {
+      setSelectedSponsorship({
+        title: "",
+        titleAr: "",
+        description: "",
+        descriptionAr: "",
+        donationLink: "",
+        category: "",
+        categoryAr: "",
+        total: "",
+        remaining: "",
+        details: {
+          title: "",
+          titleAr: "",
+          description1: "",
+          description1Ar: "",
+          description2: "",
+          description2Ar: "",
+        }
+      });
+    }
     setModalMode(mode);
     setShowModal(true);
   };
@@ -39,8 +73,21 @@ export default function SponsorshipsPage() {
     setSelectedSponsorship({});
   };
 
+  const handleShowViewModal = (sponsorship) => {
+    setViewSponsorship(sponsorship);
+    setShowViewModal(true);
+  };
+
+  const handleCloseViewModal = () => {
+    setShowViewModal(false);
+    setViewSponsorship(null);
+  };
+
   const validateForm = () => {
-    const requiredFields = {
+    const missingFields = [];
+    
+    // Check main fields
+    const mainFields = {
       title: "العنوان بالإنجليزية",
       titleAr: "العنوان بالعربية",
       description: "الوصف بالإنجليزية",
@@ -52,13 +99,32 @@ export default function SponsorshipsPage() {
       remaining: "المبلغ المتبقي",
     };
 
-    const missingFields = [];
-    Object.entries(requiredFields).forEach(([field, label]) => {
-      if (!selectedSponsorship[field]) {
+    Object.entries(mainFields).forEach(([field, label]) => {
+      const value = selectedSponsorship[field];
+      if (!value || (typeof value === 'string' && value.trim() === '')) {
         missingFields.push(label);
       }
     });
 
+    // Check details fields
+    const details = selectedSponsorship.details || {};
+    const detailsFields = {
+      title: "عنوان التفاصيل بالإنجليزية",
+      titleAr: "عنوان التفاصيل بالعربية",
+      description1: "الوصف الأول بالإنجليزية",
+      description1Ar: "الوصف الأول بالعربية",
+      description2: "الوصف الثاني بالإنجليزية",
+      description2Ar: "الوصف الثاني بالعربية",
+    };
+
+    Object.entries(detailsFields).forEach(([field, label]) => {
+      const value = details[field];
+      if (!value || value.trim() === '') {
+        missingFields.push(label);
+      }
+    });
+
+    // Check image for new sponsorships
     if (modalMode === "add" && !selectedSponsorship.sponsorshipImage) {
       missingFields.push("الصورة");
     }
@@ -83,8 +149,18 @@ export default function SponsorshipsPage() {
       setLoading(true);
       const formData = new FormData();
 
-      // Append both English and Arabic fields
-      const fields = {
+      // Ensure details object exists and has all required fields
+      const details = {
+        title: selectedSponsorship.details?.title || "",
+        titleAr: selectedSponsorship.details?.titleAr || "",
+        description1: selectedSponsorship.details?.description1 || "",
+        description1Ar: selectedSponsorship.details?.description1Ar || "",
+        description2: selectedSponsorship.details?.description2 || "",
+        description2Ar: selectedSponsorship.details?.description2Ar || "",
+      };
+
+      // Prepare the data
+      const data = {
         title: selectedSponsorship.title,
         titleAr: selectedSponsorship.titleAr,
         description: selectedSponsorship.description,
@@ -96,15 +172,17 @@ export default function SponsorshipsPage() {
         remaining: selectedSponsorship.remaining,
       };
 
-      Object.keys(fields).forEach((key) => {
-        formData.append(key, fields[key] || "");
+      // Append main fields to formData
+      Object.entries(data).forEach(([key, value]) => {
+        formData.append(key, value);
       });
 
+      // Append details as JSON string
+      formData.append("details", JSON.stringify(details));
+
+      // Append image if new one is selected
       if (selectedSponsorship.sponsorshipImage instanceof File) {
-        formData.append(
-          "sponsorshipImage",
-          selectedSponsorship.sponsorshipImage
-        );
+        formData.append("sponsorshipImage", selectedSponsorship.sponsorshipImage);
       }
 
       if (modalMode === "add") {
@@ -135,7 +213,7 @@ export default function SponsorshipsPage() {
       Swal.fire({
         icon: "error",
         title: "خطأ!",
-        text: "حدث خطأ أثناء حفظ الكفالة",
+        text: error.response?.data?.message || "حدث خطأ أثناء الحفظ",
         confirmButtonText: "حسناً",
       });
     } finally {
@@ -228,8 +306,17 @@ export default function SponsorshipsPage() {
                   <td>
                     <div className="d-flex gap-2">
                       <Button
+                        variant="outline-info"
+                        size="sm"
+                        className="me-2"
+                        onClick={() => handleShowViewModal(sponsorship)}
+                      >
+                        عرض
+                      </Button>
+                      <Button
                         variant="outline-primary"
                         size="sm"
+                        className="me-2"
                         onClick={() => handleShowModal(sponsorship, "edit")}
                       >
                         تعديل
@@ -340,9 +427,10 @@ export default function SponsorshipsPage() {
           <div className="mb-4">
             <h6 className="mb-3 border-bottom pb-2">التصنيف</h6>
             <div className="mb-3">
-              <label className="form-label">بالعربية</label>
-              <select
-                className="form-select"
+              <label className="form-label">التصنيف بالعربية</label>
+              <input
+                type="text"
+                className="form-control"
                 value={selectedSponsorship.categoryAr || ""}
                 onChange={(e) =>
                   setSelectedSponsorship({
@@ -350,17 +438,13 @@ export default function SponsorshipsPage() {
                     categoryAr: e.target.value,
                   })
                 }
-              >
-                <option value="">اختر التصنيف</option>
-                <option value="أيتام">أيتام</option>
-                <option value="طلاب">طلاب</option>
-                <option value="أسر">أسر</option>
-              </select>
+              />
             </div>
             <div className="mb-3">
-              <label className="form-label">بالإنجليزية</label>
-              <select
-                className="form-select"
+              <label className="form-label">التصنيف بالإنجليزية</label>
+              <input
+                type="text"
+                className="form-control"
                 value={selectedSponsorship.category || ""}
                 onChange={(e) =>
                   setSelectedSponsorship({
@@ -368,12 +452,7 @@ export default function SponsorshipsPage() {
                     category: e.target.value,
                   })
                 }
-              >
-                <option value="">Select Category</option>
-                <option value="Orphans">Orphans</option>
-                <option value="Students">Students</option>
-                <option value="Families">Families</option>
-              </select>
+              />
             </div>
           </div>
 
@@ -421,6 +500,108 @@ export default function SponsorshipsPage() {
               }
             />
           </div>
+
+          <div className="mb-4">
+            <h6 className="mb-3 border-bottom pb-2">تفاصيل إضافية</h6>
+            <div className="mb-3">
+              <label className="form-label">عنوان التفاصيل بالعربية</label>
+              <input
+                type="text"
+                className="form-control"
+                value={selectedSponsorship.details?.titleAr || ""}
+                onChange={(e) =>
+                  setSelectedSponsorship({
+                    ...selectedSponsorship,
+                    details: {
+                      ...selectedSponsorship.details,
+                      titleAr: e.target.value,
+                    },
+                  })
+                }
+              />
+            </div>
+            <div className="mb-3">
+              <label className="form-label">عنوان التفاصيل بالإنجليزية</label>
+              <input
+                type="text"
+                className="form-control"
+                value={selectedSponsorship.details?.title || ""}
+                onChange={(e) =>
+                  setSelectedSponsorship({
+                    ...selectedSponsorship,
+                    details: {
+                      ...selectedSponsorship.details,
+                      title: e.target.value,
+                    },
+                  })
+                }
+              />
+            </div>
+            <div className="mb-3">
+              <label className="form-label">الوصف الأول بالعربية</label>
+              <textarea
+                className="form-control"
+                value={selectedSponsorship.details?.description1Ar || ""}
+                onChange={(e) =>
+                  setSelectedSponsorship({
+                    ...selectedSponsorship,
+                    details: {
+                      ...selectedSponsorship.details,
+                      description1Ar: e.target.value,
+                    },
+                  })
+                }
+              />
+            </div>
+            <div className="mb-3">
+              <label className="form-label">الوصف الأول بالإنجليزية</label>
+              <textarea
+                className="form-control"
+                value={selectedSponsorship.details?.description1 || ""}
+                onChange={(e) =>
+                  setSelectedSponsorship({
+                    ...selectedSponsorship,
+                    details: {
+                      ...selectedSponsorship.details,
+                      description1: e.target.value,
+                    },
+                  })
+                }
+              />
+            </div>
+            <div className="mb-3">
+              <label className="form-label">الوصف الثاني بالعربية</label>
+              <textarea
+                className="form-control"
+                value={selectedSponsorship.details?.description2Ar || ""}
+                onChange={(e) =>
+                  setSelectedSponsorship({
+                    ...selectedSponsorship,
+                    details: {
+                      ...selectedSponsorship.details,
+                      description2Ar: e.target.value,
+                    },
+                  })
+                }
+              />
+            </div>
+            <div className="mb-3">
+              <label className="form-label">الوصف الثاني بالإنجليزية</label>
+              <textarea
+                className="form-control"
+                value={selectedSponsorship.details?.description2 || ""}
+                onChange={(e) =>
+                  setSelectedSponsorship({
+                    ...selectedSponsorship,
+                    details: {
+                      ...selectedSponsorship.details,
+                      description2: e.target.value,
+                    },
+                  })
+                }
+              />
+            </div>
+          </div>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={handleCloseModal}>
@@ -428,6 +609,84 @@ export default function SponsorshipsPage() {
           </Button>
           <Button variant="primary" onClick={handleSaveSponsorship}>
             {modalMode === "add" ? "إضافة" : "حفظ التغييرات"}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal show={showViewModal} onHide={handleCloseViewModal} size="lg" dir="rtl">
+        <Modal.Header closeButton>
+          <Modal.Title>تفاصيل الكفالة</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {viewSponsorship && (
+            <div className="view-sponsorship-details">
+              <div className="text-center mb-4">
+                <img
+                  src={`http://localhost:3500/uploads/sponsorships/${viewSponsorship.sponsorshipImage}`}
+                  alt={viewSponsorship.title}
+                  className="img-fluid"
+                  style={{ maxHeight: "300px", objectFit: "contain" }}
+                />
+              </div>
+
+              <div className="mb-4">
+                <h5 className="border-bottom pb-2">العنوان</h5>
+                <p className="text-muted mb-1">بالعربية: {viewSponsorship.titleAr}</p>
+                <p>بالإنجليزية: {viewSponsorship.title}</p>
+              </div>
+
+              <div className="mb-4">
+                <h5 className="border-bottom pb-2">الوصف</h5>
+                <p className="text-muted mb-1">بالعربية: {viewSponsorship.descriptionAr}</p>
+                <p>بالإنجليزية: {viewSponsorship.description}</p>
+              </div>
+
+              <div className="mb-4">
+                <h5 className="border-bottom pb-2">التصنيف</h5>
+                <p className="text-muted mb-1">بالعربية: {viewSponsorship.categoryAr}</p>
+                <p>بالإنجليزية: {viewSponsorship.category}</p>
+              </div>
+
+              <div className="mb-4">
+                <h5 className="border-bottom pb-2">المبالغ</h5>
+                <p className="mb-1">المبلغ الكلي: {viewSponsorship.total}</p>
+                <p>المبلغ المتبقي: {viewSponsorship.remaining}</p>
+              </div>
+
+              <div className="mb-4">
+                <h5 className="border-bottom pb-2">رابط التبرع</h5>
+                <a href={viewSponsorship.donationLink} target="_blank" rel="noopener noreferrer">
+                  {viewSponsorship.donationLink}
+                </a>
+              </div>
+
+              <div className="mb-4">
+                <h5 className="border-bottom pb-2">تفاصيل إضافية</h5>
+                
+                <div className="mb-3">
+                  <h6>العنوان</h6>
+                  <p className="text-muted mb-1">بالعربية: {viewSponsorship.details?.titleAr}</p>
+                  <p>بالإنجليزية: {viewSponsorship.details?.title}</p>
+                </div>
+
+                <div className="mb-3">
+                  <h6>الوصف الأول</h6>
+                  <p className="text-muted mb-1">بالعربية: {viewSponsorship.details?.description1Ar}</p>
+                  <p>بالإنجليزية: {viewSponsorship.details?.description1}</p>
+                </div>
+
+                <div className="mb-3">
+                  <h6>الوصف الثاني</h6>
+                  <p className="text-muted mb-1">بالعربية: {viewSponsorship.details?.description2Ar}</p>
+                  <p>بالإنجليزية: {viewSponsorship.details?.description2}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleCloseViewModal}>
+            إغلاق
           </Button>
         </Modal.Footer>
       </Modal>

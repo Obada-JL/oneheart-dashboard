@@ -15,11 +15,12 @@ export default function CurrentCampaigns() {
     setLoading(true);
     try {
       const response = await axios.get(
-        "http://localhost:3500/api/current-campagins"
+        "http://localhost:3500/api/current-campaigns"
       );
       setCampaigns(response.data);
     } catch (error) {
       console.error("Error fetching campaigns:", error);
+      alert("خطأ في جلب البيانات");
     } finally {
       setLoading(false);
     }
@@ -93,33 +94,25 @@ export default function CurrentCampaigns() {
         formData.append(field, selectedCampaign[field] || "");
       });
 
-      // Append image
+      // Append image if new one is selected
       if (selectedCampaign.image instanceof File) {
         formData.append("image", selectedCampaign.image);
       }
 
       // Append details
-      const details = {
-        title: selectedCampaign.details?.title || "",
-        titleAr: selectedCampaign.details?.titleAr || "",
-        description1: selectedCampaign.details?.description1 || "",
-        description1Ar: selectedCampaign.details?.description1Ar || "",
-        description2: selectedCampaign.details?.description2 || "",
-        description2Ar: selectedCampaign.details?.description2Ar || "",
-      };
+      formData.append("details", JSON.stringify(selectedCampaign.details));
 
-      formData.append("details", JSON.stringify(details));
-
-      const url =
-        modalMode === "add"
-          ? "http://localhost:3500/api/current-campagins"
-          : `http://localhost:3500/api/current-campagins/${selectedCampaign._id}`;
+      const url = modalMode === "add"
+        ? "http://localhost:3500/api/current-campaigns"
+        : `http://localhost:3500/api/current-campaigns/${selectedCampaign._id}`;
 
       await axios({
         method: modalMode === "add" ? "post" : "put",
         url,
         data: formData,
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: { 
+          "Content-Type": "multipart/form-data"
+        },
       });
 
       fetchCampaigns();
@@ -136,10 +129,11 @@ export default function CurrentCampaigns() {
     if (window.confirm("هل أنت متأكد من حذف هذه الحملة؟")) {
       setLoading(true);
       try {
-        await axios.delete(`http://localhost:3500/api/current-campagins/${id}`);
+        await axios.delete(`http://localhost:3500/api/current-campaigns/${id}`);
         fetchCampaigns();
       } catch (error) {
         console.error("Error deleting campaign:", error);
+        alert("خطأ في حذف الحملة");
       } finally {
         setLoading(false);
       }
@@ -189,40 +183,45 @@ export default function CurrentCampaigns() {
                     <img
                       src={`http://localhost:3500/uploads/current-campaigns/${campaign.image}`}
                       alt={campaign.title}
-                      style={{
-                        width: "50px",
-                        height: "50px",
-                        objectFit: "cover",
-                      }}
+                      style={{ width: "100px", height: "60px", objectFit: "cover" }}
                     />
                   </td>
-                  <td>{campaign.title}</td>
-                  <td>{campaign.category}</td>
-                  <td>{campaign.description.substring(0, 100)}...</td>
                   <td>
-                    <div className="d-flex gap-2">
-                      <Button
-                        variant="outline-info"
-                        size="sm"
-                        onClick={() => handleShowViewModal(campaign)}
-                      >
-                        عرض
-                      </Button>
-                      <Button
-                        variant="outline-primary"
-                        size="sm"
-                        onClick={() => handleShowModal(campaign, "edit")}
-                      >
-                        تعديل
-                      </Button>
-                      <Button
-                        variant="outline-danger"
-                        size="sm"
-                        onClick={() => handleDeleteCampaign(campaign._id)}
-                      >
-                        حذف
-                      </Button>
-                    </div>
+                    <div>{campaign.titleAr}</div>
+                    <small className="text-muted">{campaign.title}</small>
+                  </td>
+                  <td>
+                    <div>{campaign.categoryAr}</div>
+                    <small className="text-muted">{campaign.category}</small>
+                  </td>
+                  <td>
+                    <div>{campaign.descriptionAr?.substring(0, 100)}...</div>
+                    <small className="text-muted">{campaign.description?.substring(0, 100)}...</small>
+                  </td>
+                  <td>
+                    <Button
+                      variant="outline-info"
+                      size="sm"
+                      className="me-2"
+                      onClick={() => handleShowViewModal(campaign)}
+                    >
+                      عرض
+                    </Button>
+                    <Button
+                      variant="outline-primary"
+                      size="sm"
+                      className="me-2"
+                      onClick={() => handleShowModal(campaign, "edit")}
+                    >
+                      تعديل
+                    </Button>
+                    <Button
+                      variant="outline-danger"
+                      size="sm"
+                      onClick={() => handleDeleteCampaign(campaign._id)}
+                    >
+                      حذف
+                    </Button>
                   </td>
                 </tr>
               ))}
