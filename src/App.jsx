@@ -16,6 +16,9 @@ import DocumentationsPage from "./Components/DocumentationsPage";
 import DocumentationPhotos from "./Components/DocumentationPhotos";
 import DocumentationVideos from "./Components/DocumentationVideos";
 import SettingsComponents from "./Components/SettingsComponents";
+import UsersPage from "./Components/UsersPage";
+import ProfilePage from "./Components/ProfilePage";
+import AdminRoute from "./Components/AdminRoute";
 
 function App() {
   const isAuthenticated = !!localStorage.getItem("token");
@@ -48,6 +51,11 @@ function App() {
           element: <DocumentationVideos />,
         },
         { path: "/others", element: <SettingsComponents /> },
+        { 
+          path: "/users", 
+          element: <AdminRoute><UsersPage /></AdminRoute> 
+        },
+        { path: "/profile", element: <ProfilePage /> },
         { path: "*", element: <NotFound /> },
       ],
     },

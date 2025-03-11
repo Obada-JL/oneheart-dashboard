@@ -20,6 +20,8 @@ export default function Login() {
     setError("");
     
     try {
+      console.log("Attempting login with username:", username);
+      
       const response = await axios.post(
         "http://localhost:3500/api/auth/login",
         {
@@ -28,10 +30,29 @@ export default function Login() {
         }
       );
 
+      console.log("Login successful, user data:", response.data.user);
+      
+      // Make sure we have a valid user ID
+      if (!response.data.user || !response.data.user.id) {
+        console.error("Missing user ID in response:", response.data);
+        setError("بيانات المستخدم غير صالحة");
+        setLoading(false);
+        return;
+      }
+
       localStorage.setItem("token", response.data.token);
       localStorage.setItem("user", JSON.stringify(response.data.user));
+      localStorage.setItem("userId", response.data.user.id);
+      localStorage.setItem("username", response.data.user.username);
+      localStorage.setItem("role", response.data.user.role || "user");
+      
+      console.log("Stored user ID:", response.data.user.id);
+      console.log("Stored username:", response.data.user.username);
+      console.log("Stored role:", response.data.user.role || "user");
+      
       window.location.href = "/";
     } catch (error) {
+      console.error("Login error:", error);
       setError(error.response?.data?.message || "حدث خطأ في تسجيل الدخول");
     } finally {
       setLoading(false);
