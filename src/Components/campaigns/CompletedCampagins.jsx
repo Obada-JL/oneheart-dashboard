@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Modal, Button, Table, Spinner } from "react-bootstrap";
+import { Modal, Button, Table, Spinner, Form, Tabs, Tab } from "react-bootstrap";
+import Swal from 'sweetalert2';
 
 export default function CompletedCampaigns() {
   const [campaigns, setCampaigns] = useState([]);
@@ -10,6 +11,10 @@ export default function CompletedCampaigns() {
   const [loading, setLoading] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewCampaign, setViewCampaign] = useState(null);
+  const [activeLanguage, setActiveLanguage] = useState('ar');
+  const [validated, setValidated] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
 
   // Fetch all campaigns
   const fetchCampaigns = async () => {
@@ -21,7 +26,11 @@ export default function CompletedCampaigns() {
       setCampaigns(response.data);
     } catch (error) {
       console.error("Error fetching campaigns:", error);
-      alert("خطأ في جلب البيانات");
+      Swal.fire({
+        icon: 'error',
+        title: 'خطأ',
+        text: 'خطأ في جلب البيانات',
+      });
     } finally {
       setLoading(false);
     }
@@ -33,12 +42,18 @@ export default function CompletedCampaigns() {
 
   // Handle modal display
   const handleShowModal = (campaign = {}, mode = "add") => {
+    setValidated(false);
+    setErrors({});
+    setTouched({});
+    
     if (mode === "edit") {
       const details = campaign.details?.[0] || {};
       setSelectedCampaign({
         _id: campaign._id,
         title: campaign.title || '',
         titleAr: campaign.titleAr || '',
+        description: campaign.description || '',
+        descriptionAr: campaign.descriptionAr || '',
         category: campaign.category || '',
         categoryAr: campaign.categoryAr || '',
         image: campaign.image || '',
@@ -52,7 +67,23 @@ export default function CompletedCampaigns() {
         BeneficiaryAr: details.BeneficiaryAr || '',
       });
     } else {
-      setSelectedCampaign({});
+      setSelectedCampaign({
+        title: '',
+        titleAr: '',
+        description: '',
+        descriptionAr: '',
+        category: '',
+        categoryAr: '',
+        image: '',
+        fund: '',
+        fundAr: '',
+        location: '',
+        locationAr: '',
+        duration: '',
+        durationAr: '',
+        Beneficiary: '',
+        BeneficiaryAr: '',
+      });
     }
     setModalMode(mode);
     setShowModal(true);
@@ -61,23 +92,119 @@ export default function CompletedCampaigns() {
   const handleCloseModal = () => {
     setShowModal(false);
     setSelectedCampaign({});
+    setValidated(false);
+    setErrors({});
+    setTouched({});
+  };
+
+  // Field change handler with validation
+  const handleFieldChange = (field, value) => {
+    setTouched({ ...touched, [field]: true });
+    
+    const newSelectedCampaign = { ...selectedCampaign, [field]: value };
+    setSelectedCampaign(newSelectedCampaign);
+    
+    // Validate the field
+    validateField(field, value);
+  };
+
+  // Validate a single field
+  const validateField = (field, value) => {
+    const newErrors = { ...errors };
+    
+    // Required fields validation
+    const requiredFields = [
+      'title', 'titleAr', 'description', 'descriptionAr', 
+      'category', 'categoryAr', 'fund', 'fundAr', 
+      'location', 'locationAr', 'duration', 'durationAr',
+      'Beneficiary', 'BeneficiaryAr'
+    ];
+    
+    if (requiredFields.includes(field) && !value) {
+      newErrors[field] = 'هذا الحقل مطلوب';
+    } else {
+      delete newErrors[field];
+    }
+    
+    // Image validation for new campaigns
+    if (field === 'image' && modalMode === 'add') {
+      if (!value && !selectedCampaign.image) {
+        newErrors.image = 'الصورة مطلوبة';
+      } else {
+        delete newErrors.image;
+      }
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Validate all fields
+  const validateForm = () => {
+    const newErrors = {};
+    const requiredFields = [
+      'title', 'titleAr', 'description', 'descriptionAr', 
+      'category', 'categoryAr', 'fund', 'fundAr', 
+      'location', 'locationAr', 'duration', 'durationAr',
+      'Beneficiary', 'BeneficiaryAr'
+    ];
+    
+    // Mark all fields as touched
+    const newTouched = {};
+    requiredFields.forEach(field => {
+      newTouched[field] = true;
+    });
+    setTouched(newTouched);
+    
+    // Check required fields
+    requiredFields.forEach(field => {
+      if (!selectedCampaign[field]) {
+        newErrors[field] = 'هذا الحقل مطلوب';
+      }
+    });
+    
+    // Check image for new campaigns
+    if (modalMode === 'add' && !selectedCampaign.image) {
+      newErrors.image = 'الصورة مطلوبة';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   // Save campaign (create/update)
   const handleSaveCampaign = async () => {
+    // Validate all fields
+    const isValid = validateForm();
+    setValidated(true);
+    
+    if (!isValid) {
+      Swal.fire({
+        icon: 'error',
+        title: 'خطأ',
+        text: 'يرجى ملء جميع الحقول المطلوبة',
+      });
+      return;
+    }
+    
     setLoading(true);
     const formData = new FormData();
 
     try {
+      console.log("Saving campaign with data:", selectedCampaign);
+      
       // Append main fields
       formData.append('title', selectedCampaign.title || '');
       formData.append('titleAr', selectedCampaign.titleAr || '');
+      formData.append('description', selectedCampaign.description || '');
+      formData.append('descriptionAr', selectedCampaign.descriptionAr || '');
       formData.append('category', selectedCampaign.category || '');
       formData.append('categoryAr', selectedCampaign.categoryAr || '');
 
       // Append image if new one is selected
       if (selectedCampaign.image instanceof File) {
         formData.append("image", selectedCampaign.image);
+        console.log("Appending image file:", selectedCampaign.image.name);
       }
 
       // Create details object
@@ -94,23 +221,38 @@ export default function CompletedCampaigns() {
 
       // Append details as JSON string
       formData.append("details", JSON.stringify([details]));
+      console.log("Appending details:", JSON.stringify([details]));
 
       const url = modalMode === "add"
         ? "http://localhost:3500/api/completed-campaigns"
         : `http://localhost:3500/api/completed-campaigns/${selectedCampaign._id}`;
 
-      await axios({
+      console.log("Sending request to:", url, "Method:", modalMode === "add" ? "post" : "put");
+      
+      const response = await axios({
         method: modalMode === "add" ? "post" : "put",
         url,
         data: formData,
         headers: { "Content-Type": "multipart/form-data" },
       });
 
+      console.log("Response:", response.data);
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'تم بنجاح',
+        text: modalMode === "add" ? 'تمت إضافة الحملة بنجاح' : 'تم تحديث الحملة بنجاح',
+      });
+
       fetchCampaigns();
       handleCloseModal();
     } catch (error) {
       console.error("Error saving campaign:", error);
-      alert(error.response?.data?.message || "حدث خطأ أثناء الحفظ");
+      Swal.fire({
+        icon: 'error',
+        title: 'خطأ',
+        text: error.response?.data?.message || "حدث خطأ أثناء الحفظ",
+      });
     } finally {
       setLoading(false);
     }
@@ -118,18 +260,38 @@ export default function CompletedCampaigns() {
 
   // Delete campaign
   const handleDeleteCampaign = async (id) => {
-    if (window.confirm("هل أنت متأكد من حذف هذه الحملة؟")) {
-      setLoading(true);
-      try {
-        await axios.delete(`http://localhost:3500/api/completed-campaigns/${id}`);
-        fetchCampaigns();
-      } catch (error) {
-        console.error("Error deleting campaign:", error);
-        alert("خطأ في حذف الحملة");
-      } finally {
-        setLoading(false);
+    Swal.fire({
+      title: 'هل أنت متأكد؟',
+      text: "لن تتمكن من التراجع عن هذا!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'نعم، احذفها!',
+      cancelButtonText: 'إلغاء'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        setLoading(true);
+        try {
+          await axios.delete(`http://localhost:3500/api/completed-campaigns/${id}`);
+          fetchCampaigns();
+          Swal.fire(
+            'تم الحذف!',
+            'تم حذف الحملة بنجاح.',
+            'success'
+          );
+        } catch (error) {
+          console.error("Error deleting campaign:", error);
+          Swal.fire({
+            icon: 'error',
+            title: 'خطأ',
+            text: 'خطأ في حذف الحملة',
+          });
+        } finally {
+          setLoading(false);
+        }
       }
-    }
+    });
   };
 
   // View modal handlers
@@ -198,6 +360,14 @@ export default function CompletedCampaigns() {
                   </td>
                   <td>
                     <Button
+                      variant="outline-info"
+                      size="sm"
+                      className="me-2"
+                      onClick={() => handleShowViewModal(campaign)}
+                    >
+                      عرض
+                    </Button>
+                    <Button
                       variant="outline-primary"
                       size="sm"
                       className="me-2"
@@ -224,249 +394,268 @@ export default function CompletedCampaigns() {
       <Modal show={showModal} onHide={handleCloseModal} size="lg" dir="rtl">
         <Modal.Header closeButton>
           <Modal.Title>
-            {modalMode === "add" ? "إضافة حملة جديدة" : "تعديل الحملة"}
+            {modalMode === "add" ? "إضافة حملة منتهية" : "تعديل الحملة"}
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <div className="mb-3">
-            <label className="form-label">صورة الحملة</label>
-            <input
-              type="file"
-              className="form-control"
-              onChange={(e) =>
-                setSelectedCampaign({
-                  ...selectedCampaign,
-                  image: e.target.files[0],
-                })
-              }
-            />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">العنوان بالعربية</label>
-            <input
-              type="text"
-              className="form-control"
-              value={selectedCampaign.titleAr || ""}
-              onChange={(e) =>
-                setSelectedCampaign({
-                  ...selectedCampaign,
-                  titleAr: e.target.value,
-                })
-              }
-            />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">Title in English</label>
-            <input
-              type="text"
-              className="form-control"
-              value={selectedCampaign.title || ""}
-              onChange={(e) =>
-                setSelectedCampaign({
-                  ...selectedCampaign,
-                  title: e.target.value,
-                })
-              }
-            />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">التصنيف بالعربية</label>
-            <input
-              type="text"
-              className="form-control"
-              value={selectedCampaign.categoryAr || ""}
-              onChange={(e) =>
-                setSelectedCampaign({
-                  ...selectedCampaign,
-                  categoryAr: e.target.value,
-                })
-              }
-            />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">Category in English</label>
-            <input
-              type="text"
-              className="form-control"
-              value={selectedCampaign.category || ""}
-              onChange={(e) =>
-                setSelectedCampaign({
-                  ...selectedCampaign,
-                  category: e.target.value,
-                })
-              }
-            />
-          </div>
+          <Form noValidate validated={validated}>
+            <Form.Group className="mb-4">
+              <Form.Label className="fw-bold">صورة الحملة</Form.Label>
+              <Form.Control
+                type="file"
+                onChange={(e) => handleFieldChange('image', e.target.files[0])}
+                isInvalid={touched.image && !!errors.image}
+              />
+              <Form.Control.Feedback type="invalid">
+                {errors.image}
+              </Form.Control.Feedback>
+              {modalMode === "edit" && selectedCampaign.image && typeof selectedCampaign.image === 'string' && (
+                <div className="mt-2">
+                  <img
+                    src={`http://localhost:3500/uploads/completed-campaigns/${selectedCampaign.image}`}
+                    alt="Current"
+                    style={{ width: "100px", height: "60px", objectFit: "cover" }}
+                  />
+                  <small className="d-block mt-1">الصورة الحالية</small>
+                </div>
+              )}
+            </Form.Group>
 
-          {/* Details Section */}
-          <h5 className="mt-4">تفاصيل الحملة</h5>
-          {selectedCampaign.details?.map((detail, index) => (
-            <div key={index} className="border p-3 mb-3 rounded">
-              <h6>التفاصيل {index + 1}</h6>
-              
-              {/* Fund fields */}
-              <div className="mb-3">
-                <label className="form-label">التمويل بالعربية</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={detail.fundAr || ""}
-                  onChange={(e) => {
-                    const newDetails = [...selectedCampaign.details];
-                    newDetails[index] = { ...detail, fundAr: e.target.value };
-                    setSelectedCampaign({ ...selectedCampaign, details: newDetails });
-                  }}
-                />
-              </div>
-              <div className="mb-3">
-                <label className="form-label">Fund in English</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={detail.fund || ""}
-                  onChange={(e) => {
-                    const newDetails = [...selectedCampaign.details];
-                    newDetails[index] = { ...detail, fund: e.target.value };
-                    setSelectedCampaign({ ...selectedCampaign, details: newDetails });
-                  }}
-                />
-              </div>
+            <Tabs
+              activeKey={activeLanguage}
+              onSelect={(k) => setActiveLanguage(k)}
+              className="mb-4"
+            >
+              <Tab eventKey="ar" title="العربية">
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-bold">العنوان</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={selectedCampaign.titleAr || ""}
+                    onChange={(e) => handleFieldChange('titleAr', e.target.value)}
+                    isInvalid={touched.titleAr && !!errors.titleAr}
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    {errors.titleAr}
+                  </Form.Control.Feedback>
+                </Form.Group>
 
-              {/* Location fields */}
-              <div className="mb-3">
-                <label className="form-label">الموقع بالعربية</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={detail.locationAr || ""}
-                  onChange={(e) => {
-                    const newDetails = [...selectedCampaign.details];
-                    newDetails[index] = { ...detail, locationAr: e.target.value };
-                    setSelectedCampaign({ ...selectedCampaign, details: newDetails });
-                  }}
-                />
-              </div>
-              <div className="mb-3">
-                <label className="form-label">Location in English</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={detail.location || ""}
-                  onChange={(e) => {
-                    const newDetails = [...selectedCampaign.details];
-                    newDetails[index] = { ...detail, location: e.target.value };
-                    setSelectedCampaign({ ...selectedCampaign, details: newDetails });
-                  }}
-                />
-              </div>
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-bold">الوصف</Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    rows={3}
+                    value={selectedCampaign.descriptionAr || ""}
+                    onChange={(e) => handleFieldChange('descriptionAr', e.target.value)}
+                    isInvalid={touched.descriptionAr && !!errors.descriptionAr}
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    {errors.descriptionAr}
+                  </Form.Control.Feedback>
+                </Form.Group>
 
-              {/* Duration fields */}
-              <div className="mb-3">
-                <label className="form-label">المدة بالعربية</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={detail.durationAr || ""}
-                  onChange={(e) => {
-                    const newDetails = [...selectedCampaign.details];
-                    newDetails[index] = { ...detail, durationAr: e.target.value };
-                    setSelectedCampaign({ ...selectedCampaign, details: newDetails });
-                  }}
-                />
-              </div>
-              <div className="mb-3">
-                <label className="form-label">Duration in English</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={detail.duration || ""}
-                  onChange={(e) => {
-                    const newDetails = [...selectedCampaign.details];
-                    newDetails[index] = { ...detail, duration: e.target.value };
-                    setSelectedCampaign({ ...selectedCampaign, details: newDetails });
-                  }}
-                />
-              </div>
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-bold">التصنيف</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={selectedCampaign.categoryAr || ""}
+                    onChange={(e) => handleFieldChange('categoryAr', e.target.value)}
+                    isInvalid={touched.categoryAr && !!errors.categoryAr}
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    {errors.categoryAr}
+                  </Form.Control.Feedback>
+                </Form.Group>
 
-              {/* Beneficiary fields */}
-              <div className="mb-3">
-                <label className="form-label">المستفيدون بالعربية</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={detail.BeneficiaryAr || ""}
-                  onChange={(e) => {
-                    const newDetails = [...selectedCampaign.details];
-                    newDetails[index] = { ...detail, BeneficiaryAr: e.target.value };
-                    setSelectedCampaign({ ...selectedCampaign, details: newDetails });
-                  }}
-                />
-              </div>
-              <div className="mb-3">
-                <label className="form-label">Beneficiaries in English</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={detail.Beneficiary || ""}
-                  onChange={(e) => {
-                    const newDetails = [...selectedCampaign.details];
-                    newDetails[index] = { ...detail, Beneficiary: e.target.value };
-                    setSelectedCampaign({ ...selectedCampaign, details: newDetails });
-                  }}
-                />
-              </div>
+                {/* Arabic Details */}
+                <div className="border rounded p-3 mb-3">
+                  <h6 className="mb-3">تفاصيل إضافية</h6>
+                  <Form.Group className="mb-3">
+                    <Form.Label>التمويل</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={selectedCampaign.fundAr || ""}
+                      onChange={(e) => handleFieldChange('fundAr', e.target.value)}
+                      isInvalid={touched.fundAr && !!errors.fundAr}
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.fundAr}
+                    </Form.Control.Feedback>
+                  </Form.Group>
 
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={() => {
-                  const newDetails = selectedCampaign.details.filter((_, i) => i !== index);
-                  setSelectedCampaign({ ...selectedCampaign, details: newDetails });
-                }}
-              >
-                حذف هذه التفاصيل
-              </Button>
-            </div>
-          ))}
+                  <Form.Group className="mb-3">
+                    <Form.Label>الموقع</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={selectedCampaign.locationAr || ""}
+                      onChange={(e) => handleFieldChange('locationAr', e.target.value)}
+                      isInvalid={touched.locationAr && !!errors.locationAr}
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.locationAr}
+                    </Form.Control.Feedback>
+                  </Form.Group>
 
-          <Button
-            variant="success"
-            onClick={() => {
-              const newDetails = [...(selectedCampaign.details || []), {
-                fund: "",
-                fundAr: "",
-                location: "",
-                locationAr: "",
-                duration: "",
-                durationAr: "",
-                Beneficiary: "",
-                BeneficiaryAr: ""
-              }];
-              setSelectedCampaign({ ...selectedCampaign, details: newDetails });
-            }}
-          >
-            إضافة تفاصيل جديدة
-          </Button>
+                  <Form.Group className="mb-3">
+                    <Form.Label>المدة</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={selectedCampaign.durationAr || ""}
+                      onChange={(e) => handleFieldChange('durationAr', e.target.value)}
+                      isInvalid={touched.durationAr && !!errors.durationAr}
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.durationAr}
+                    </Form.Control.Feedback>
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>المستفيدون</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={selectedCampaign.BeneficiaryAr || ""}
+                      onChange={(e) => handleFieldChange('BeneficiaryAr', e.target.value)}
+                      isInvalid={touched.BeneficiaryAr && !!errors.BeneficiaryAr}
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.BeneficiaryAr}
+                    </Form.Control.Feedback>
+                  </Form.Group>
+                </div>
+              </Tab>
+
+              <Tab eventKey="en" title="English">
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-bold">Title</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={selectedCampaign.title || ""}
+                    onChange={(e) => handleFieldChange('title', e.target.value)}
+                    isInvalid={touched.title && !!errors.title}
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    {errors.title}
+                  </Form.Control.Feedback>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-bold">Description</Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    rows={3}
+                    value={selectedCampaign.description || ""}
+                    onChange={(e) => handleFieldChange('description', e.target.value)}
+                    isInvalid={touched.description && !!errors.description}
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    {errors.description}
+                  </Form.Control.Feedback>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-bold">Category</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={selectedCampaign.category || ""}
+                    onChange={(e) => handleFieldChange('category', e.target.value)}
+                    isInvalid={touched.category && !!errors.category}
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    {errors.category}
+                  </Form.Control.Feedback>
+                </Form.Group>
+
+                {/* English Details */}
+                <div className="border rounded p-3 mb-3">
+                  <h6 className="mb-3">Additional Details</h6>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Fund</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={selectedCampaign.fund || ""}
+                      onChange={(e) => handleFieldChange('fund', e.target.value)}
+                      isInvalid={touched.fund && !!errors.fund}
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.fund}
+                    </Form.Control.Feedback>
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>Location</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={selectedCampaign.location || ""}
+                      onChange={(e) => handleFieldChange('location', e.target.value)}
+                      isInvalid={touched.location && !!errors.location}
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.location}
+                    </Form.Control.Feedback>
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>Duration</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={selectedCampaign.duration || ""}
+                      onChange={(e) => handleFieldChange('duration', e.target.value)}
+                      isInvalid={touched.duration && !!errors.duration}
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.duration}
+                    </Form.Control.Feedback>
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>Beneficiaries</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={selectedCampaign.Beneficiary || ""}
+                      onChange={(e) => handleFieldChange('Beneficiary', e.target.value)}
+                      isInvalid={touched.Beneficiary && !!errors.Beneficiary}
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.Beneficiary}
+                    </Form.Control.Feedback>
+                  </Form.Group>
+                </div>
+              </Tab>
+            </Tabs>
+          </Form>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={handleCloseModal}>
             إغلاق
           </Button>
-          <Button variant="primary" onClick={handleSaveCampaign}>
-            {modalMode === "add" ? "إضافة" : "حفظ التغييرات"}
+          <Button 
+            variant="primary" 
+            onClick={handleSaveCampaign}
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <Spinner
+                  as="span"
+                  animation="border"
+                  size="sm"
+                  role="status"
+                  aria-hidden="true"
+                  className="me-2"
+                />
+                جاري الحفظ...
+              </>
+            ) : (
+              modalMode === "add" ? "إضافة" : "حفظ التغييرات"
+            )}
           </Button>
         </Modal.Footer>
       </Modal>
 
       {/* View Modal */}
-      <Modal
-        show={showViewModal}
-        onHide={handleCloseViewModal}
-        size="lg"
-        dir="rtl"
-      >
+      <Modal show={showViewModal} onHide={handleCloseViewModal} size="lg" dir="rtl">
         <Modal.Header closeButton>
-          <Modal.Title>تفاصيل الحملة المنجزة</Modal.Title>
+          <Modal.Title>تفاصيل الحملة المنتهية</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {viewCampaign && (
@@ -481,70 +670,49 @@ export default function CompletedCampaigns() {
               </div>
 
               <div className="mb-4">
-                <h5 className="border-bottom pb-2">معلومات الحملة</h5>
-                <div className="row">
-                  <div className="col-12">
-                    <p>
-                      <strong>العنوان:</strong> {viewCampaign.title}
-                    </p>
-                    <p>
-                      <strong>العنوان (بالعربية):</strong>{" "}
-                      {viewCampaign.titleAr}
-                    </p>
-                    <p>
-                      <strong>التصنيف:</strong> {viewCampaign.category}
-                    </p>
-                    <p>
-                      <strong>التصنيف (بالعربية):</strong>{" "}
-                      {viewCampaign.categoryAr}
-                    </p>
-                  </div>
-                </div>
+                <h5 className="border-bottom pb-2">العنوان</h5>
+                <p className="text-muted mb-1">بالعربية: {viewCampaign.titleAr}</p>
+                <p>بالإنجليزية: {viewCampaign.title}</p>
               </div>
 
-              {viewCampaign.details && viewCampaign.details[0] && (
-                <div className="campaign-details mt-4">
-                  <h5 className="border-bottom pb-2">التفاصيل</h5>
-                  <div className="row">
-                    <div className="col-md-6">
-                      <p>
-                        <strong>قيمة التمويل:</strong>{" "}
-                        {viewCampaign.details[0].fund}
-                      </p>
-                      <p>
-                        <strong>قيمة التمويل (بالعربية):</strong>{" "}
-                        {viewCampaign.details[0].fundAr}
-                      </p>
-                      <p>
-                        <strong>الموقع:</strong>{" "}
-                        {viewCampaign.details[0].location}
-                      </p>
-                      <p>
-                        <strong>الموقع (بالعربية):</strong>{" "}
-                        {viewCampaign.details[0].locationAr}
-                      </p>
-                    </div>
-                    <div className="col-md-6">
-                      <p>
-                        <strong>المدة:</strong>{" "}
-                        {viewCampaign.details[0].duration}
-                      </p>
-                      <p>
-                        <strong>المدة (بالعربية):</strong>{" "}
-                        {viewCampaign.details[0].durationAr}
-                      </p>
-                      <p>
-                        <strong>المستفيدون:</strong>{" "}
-                        {viewCampaign.details[0].Beneficiary}
-                      </p>
-                      <p>
-                        <strong>المستفيدون (بالعربية):</strong>{" "}
-                        {viewCampaign.details[0].BeneficiaryAr}
-                      </p>
-                    </div>
-                  </div>
+              <div className="mb-4">
+                <h5 className="border-bottom pb-2">الوصف</h5>
+                <p className="text-muted mb-1">بالعربية: {viewCampaign.descriptionAr}</p>
+                <p>بالإنجليزية: {viewCampaign.description}</p>
+              </div>
+
+              <div className="mb-4">
+                <h5 className="border-bottom pb-2">التصنيف</h5>
+                <p className="text-muted mb-1">بالعربية: {viewCampaign.categoryAr}</p>
+                <p>بالإنجليزية: {viewCampaign.category}</p>
+              </div>
+
+              <div className="mb-4">
+                <h5 className="border-bottom pb-2">تفاصيل إضافية</h5>
+                <div className="mb-3">
+                  <h6>التمويل</h6>
+                  <p className="text-muted mb-1">بالعربية: {viewCampaign.details?.[0]?.fundAr}</p>
+                  <p>بالإنجليزية: {viewCampaign.details?.[0]?.fund}</p>
                 </div>
-              )}
+
+                <div className="mb-3">
+                  <h6>الموقع</h6>
+                  <p className="text-muted mb-1">بالعربية: {viewCampaign.details?.[0]?.locationAr}</p>
+                  <p>بالإنجليزية: {viewCampaign.details?.[0]?.location}</p>
+                </div>
+
+                <div className="mb-3">
+                  <h6>المدة</h6>
+                  <p className="text-muted mb-1">بالعربية: {viewCampaign.details?.[0]?.durationAr}</p>
+                  <p>بالإنجليزية: {viewCampaign.details?.[0]?.duration}</p>
+                </div>
+
+                <div className="mb-3">
+                  <h6>المستفيدون</h6>
+                  <p className="text-muted mb-1">بالعربية: {viewCampaign.details?.[0]?.BeneficiaryAr}</p>
+                  <p>بالإنجليزية: {viewCampaign.details?.[0]?.Beneficiary}</p>
+                </div>
+              </div>
             </div>
           )}
         </Modal.Body>

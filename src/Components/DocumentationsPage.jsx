@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Modal, Button, Table, Spinner } from "react-bootstrap";
+import { Modal, Button, Table, Spinner, Form, Tabs, Tab } from "react-bootstrap";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 
@@ -10,6 +10,7 @@ export default function DocumentationsPage() {
   const [selectedDoc, setSelectedDoc] = useState({});
   const [modalMode, setModalMode] = useState("add");
   const [loading, setLoading] = useState(false);
+  const [activeLanguage, setActiveLanguage] = useState('ar');
   const navigate = useNavigate();
 
   const fetchDocumentations = async () => {
@@ -31,7 +32,21 @@ export default function DocumentationsPage() {
   }, []);
 
   const handleShowModal = (doc = {}, mode = "add") => {
-    setSelectedDoc(doc);
+    // Create a deep copy of the doc to avoid modifying the original
+    const docCopy = mode === "edit" ? JSON.parse(JSON.stringify(doc)) : {};
+    
+    // Initialize empty objects for nested properties if they don't exist
+    if (mode === "add") {
+      docCopy.title = { en: "", ar: "" };
+      docCopy.description = { en: "", ar: "" };
+      docCopy.images = [];
+      docCopy.hasNewImages = false;
+    } else {
+      // For edit mode, ensure we have the hasNewImages flag
+      docCopy.hasNewImages = false;
+    }
+    
+    setSelectedDoc(docCopy);
     setModalMode(mode);
     setShowModal(true);
   };
@@ -43,48 +58,138 @@ export default function DocumentationsPage() {
 
   const handleSaveDoc = async () => {
     try {
+      // Validate required fields
+      const requiredFields = {
+        'title.en': 'Title in English',
+        'title.ar': 'العنوان بالعربية',
+        'description.en': 'Description in English',
+        'description.ar': 'الوصف بالعربية'
+      };
+
+      console.log("Selected Doc:", selectedDoc);
+
+      const missingFields = [];
+      Object.entries(requiredFields).forEach(([field, label]) => {
+        const value = field.split('.').reduce((obj, key) => obj && obj[key], selectedDoc);
+        console.log(`Field ${field}: ${value}`);
+        if (!value || value.trim() === '') {
+          missingFields.push(label);
+        }
+      });
+
+      // Image validation for new documentations
+      if (modalMode === "add" && (!selectedDoc.images || selectedDoc.images.length === 0)) {
+        missingFields.push("Documentation Images/صور التوثيق");
+      }
+
+      if (selectedDoc.images && selectedDoc.images.length > 3) {
+        await Swal.fire({
+          icon: "warning",
+          title: "عدد الصور غير صحيح",
+          text: "يمكنك رفع 3 صور كحد أقصى",
+          confirmButtonText: "حسناً"
+        });
+        return;
+      }
+
+      if (missingFields.length > 0) {
+        await Swal.fire({
+          icon: "warning",
+          title: "حقول مطلوبة",
+          html: `الرجاء إكمال الحقول التالية:<br>${missingFields.join("<br>")}`,
+          confirmButtonText: "حسناً"
+        });
+        return;
+      }
+
       const formData = new FormData();
 
-      // Append text fields
-      formData.append("title", selectedDoc.title);
-      formData.append("titleAr", selectedDoc.titleAr);
-      formData.append("description", selectedDoc.description);
-      formData.append("descriptionAr", selectedDoc.descriptionAr);
-      formData.append("detailsLink", selectedDoc.detailsLink);
+      // Append nested fields directly as objects
+      formData.append('title', JSON.stringify({
+        en: selectedDoc.title?.en?.trim() || '',
+        ar: selectedDoc.title?.ar?.trim() || ''
+      }));
+      
+      formData.append('description', JSON.stringify({
+        en: selectedDoc.description?.en?.trim() || '',
+        ar: selectedDoc.description?.ar?.trim() || ''
+      }));
 
-      // Append images
-      if (selectedDoc.images) {
+      // Append images - handle both File objects and existing image filenames
+      if (selectedDoc.hasNewImages && selectedDoc.images instanceof FileList) {
+        // New files uploaded via input
         Array.from(selectedDoc.images).forEach((image) => {
-          formData.append("images", image);
+          formData.append('images', image);
         });
+        console.log("Appending new images:", selectedDoc.images.length);
+      } else if (modalMode === "edit" && Array.isArray(selectedDoc.images) && selectedDoc.images.length > 0) {
+        // No new images in edit mode, but we need to inform the backend
+        formData.append('keepExistingImages', 'true');
+        console.log("Keeping existing images:", selectedDoc.images);
       }
 
-      if (modalMode === "add") {
-        await axios.post("http://localhost:3500/api/documentations", formData);
-        Swal.fire({
-          icon: "success",
-          title: "تم بنجاح!",
-          text: "تمت إضافة التوثيق بنجاح",
-        });
-      } else {
-        await axios.put(
-          `http://localhost:3500/api/documentations/${selectedDoc._id}`,
-          formData
-        );
-        Swal.fire({
-          icon: "success",
-          title: "تم بنجاح!",
-          text: "تم تحديث التوثيق بنجاح",
-        });
+      // Log form data for debugging
+      for (let pair of formData.entries()) {
+        console.log(pair[0], pair[1]);
       }
 
-      fetchDocumentations();
-      handleCloseModal();
+      try {
+        if (modalMode === "add") {
+          console.log("Creating new documentation");
+          const response = await axios.post("http://localhost:3500/api/documentations", formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+          });
+          console.log("Create response:", response.data);
+          Swal.fire({
+            icon: "success",
+            title: "تم بنجاح!",
+            text: "تمت إضافة التوثيق بنجاح",
+          });
+        } else {
+          console.log(`Updating documentation ${selectedDoc._id}`);
+          const response = await axios.put(
+            `http://localhost:3500/api/documentations/${selectedDoc._id}`,
+            formData,
+            {
+              headers: {
+                'Content-Type': 'multipart/form-data'
+              }
+            }
+          );
+          console.log("Update response:", response.data);
+          Swal.fire({
+            icon: "success",
+            title: "تم بنجاح!",
+            text: "تم تحديث التوثيق بنجاح",
+          });
+        }
+
+        fetchDocumentations();
+        handleCloseModal();
+      } catch (error) {
+        console.error("Error:", error);
+        console.error("Error response:", error.response?.data);
+        const errorMessage = error.response?.data?.errors?.[0] || 
+                            error.response?.data?.message || 
+                            "حدث خطأ أثناء حفظ التوثيق";
+        Swal.fire({
+          icon: "error",
+          title: "خطأ!",
+          text: errorMessage,
+        });
+      }
     } catch (error) {
+      console.error("Error:", error);
+      console.error("Error response:", error.response?.data);
+      const errorMessage = error.response?.data?.errors?.[0] || 
+                          error.response?.data?.message || 
+                          "حدث خطأ أثناء حفظ التوثيق";
       Swal.fire({
         icon: "error",
         title: "خطأ!",
-        text: "حدث خطأ أثناء حفظ التوثيق",
+        text: errorMessage,
       });
     }
   };
@@ -149,7 +254,7 @@ export default function DocumentationsPage() {
               <tr key={doc._id}>
                 <td>
                   <div className="d-flex gap-2">
-                    {doc.images.slice(0, 1).map((img, index) => (
+                    {doc.images && doc.images.map((img, index) => (
                       <img
                         key={index}
                         src={`http://localhost:3500/uploads/documentations/${img}`}
@@ -163,8 +268,8 @@ export default function DocumentationsPage() {
                     ))}
                   </div>
                 </td>
-                <td>{doc.title}</td>
-                <td>{doc.description.substring(0, 100)}...</td>
+                <td>{doc.title?.ar || doc.title}</td>
+                <td>{doc.description?.ar ? doc.description.ar.substring(0, 100) + '...' : ''}</td>
                 <td>
                   <div className="d-flex gap-2">
                     <Button
@@ -210,79 +315,133 @@ export default function DocumentationsPage() {
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <div className="mb-3">
-            <label className="form-label">العنوان بالعربية</label>
-            <input
-              type="text"
-              className="form-control"
-              value={selectedDoc.titleAr || ""}
-              onChange={(e) =>
-                setSelectedDoc({ ...selectedDoc, titleAr: e.target.value })
-              }
-            />
-          </div>
+          <Form>
+            <Form.Group className="mb-4">
+              <Form.Label className="fw-bold">صور التوثيق</Form.Label>
+              {modalMode === "edit" && selectedDoc.images && Array.isArray(selectedDoc.images) && selectedDoc.images.length > 0 && (
+                <div className="mb-2">
+                  <p className="mb-1">الصور الحالية:</p>
+                  <div className="d-flex gap-2 mb-2">
+                    {selectedDoc.images.map((img, index) => (
+                      <img
+                        key={index}
+                        src={`http://localhost:3500/uploads/documentations/${img}`}
+                        alt={`توثيق ${index + 1}`}
+                        style={{
+                          width: "80px",
+                          height: "80px",
+                          objectFit: "cover",
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+              <Form.Control
+                type="file"
+                multiple
+                onChange={(e) => {
+                  if (e.target.files.length > 0) {
+                    setSelectedDoc({
+                      ...selectedDoc,
+                      images: e.target.files,
+                      hasNewImages: true // Flag to indicate new images were selected
+                    });
+                  } else {
+                    // If user cancels file selection, keep existing images
+                    const existingImages = selectedDoc.images;
+                    setSelectedDoc({
+                      ...selectedDoc,
+                      hasNewImages: false
+                    });
+                  }
+                }}
+              />
+              <Form.Text className="text-muted">
+                يمكنك اختيار حتى 3 صور كحد أقصى
+              </Form.Text>
+            </Form.Group>
 
-          <div className="mb-3">
-            <label className="form-label">Title in English</label>
-            <input
-              type="text"
-              className="form-control"
-              value={selectedDoc.title || ""}
-              onChange={(e) =>
-                setSelectedDoc({ ...selectedDoc, title: e.target.value })
-              }
-            />
-          </div>
+            <Tabs
+              activeKey={activeLanguage}
+              onSelect={(k) => setActiveLanguage(k)}
+              className="mb-4"
+            >
+              <Tab eventKey="ar" title="العربية">
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-bold">العنوان</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={selectedDoc.title?.ar || ""}
+                    onChange={(e) =>
+                      setSelectedDoc({
+                        ...selectedDoc,
+                        title: {
+                          ...selectedDoc.title,
+                          ar: e.target.value,
+                        },
+                      })
+                    }
+                  />
+                </Form.Group>
 
-          <div className="mb-3">
-            <label className="form-label">الوصف بالعربية</label>
-            <textarea
-              className="form-control"
-              value={selectedDoc.descriptionAr || ""}
-              onChange={(e) =>
-                setSelectedDoc({
-                  ...selectedDoc,
-                  descriptionAr: e.target.value,
-                })
-              }
-            />
-          </div>
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-bold">الوصف</Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    rows={4}
+                    value={selectedDoc.description?.ar || ""}
+                    onChange={(e) =>
+                      setSelectedDoc({
+                        ...selectedDoc,
+                        description: {
+                          ...selectedDoc.description,
+                          ar: e.target.value,
+                        },
+                      })
+                    }
+                  />
+                </Form.Group>
+              </Tab>
 
-          <div className="mb-3">
-            <label className="form-label">Description in English</label>
-            <textarea
-              className="form-control"
-              value={selectedDoc.description || ""}
-              onChange={(e) =>
-                setSelectedDoc({ ...selectedDoc, description: e.target.value })
-              }
-            />
-          </div>
+              <Tab eventKey="en" title="English">
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-bold">Title</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={selectedDoc.title?.en || ""}
+                    onChange={(e) =>
+                      setSelectedDoc({
+                        ...selectedDoc,
+                        title: {
+                          ...selectedDoc.title,
+                          en: e.target.value,
+                        },
+                      })
+                    }
+                  />
+                </Form.Group>
 
-          <div className="mb-3">
-            <label className="form-label">رابط التفاصيل</label>
-            <input
-              type="text"
-              className="form-control"
-              value={selectedDoc.detailsLink || ""}
-              onChange={(e) =>
-                setSelectedDoc({ ...selectedDoc, detailsLink: e.target.value })
-              }
-            />
-          </div>
-
-          <div className="mb-3">
-            <label className="form-label">الصور (حد أقصى 3 صور)</label>
-            <input
-              type="file"
-              className="form-control"
-              multiple
-              accept="image/*"
-              onChange={(e) =>
-                setSelectedDoc({ ...selectedDoc, images: e.target.files })
-              }
-            />
-          </div>
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-bold">Description</Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    rows={4}
+                    value={selectedDoc.description?.en || ""}
+                    onChange={(e) =>
+                      setSelectedDoc({
+                        ...selectedDoc,
+                        description: {
+                          ...selectedDoc.description,
+                          en: e.target.value,
+                        },
+                      })
+                    }
+                  />
+                </Form.Group>
+              </Tab>
+            </Tabs>
+          </Form>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={handleCloseModal}>

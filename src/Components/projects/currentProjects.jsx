@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Modal, Button, Table, Spinner } from "react-bootstrap";
+import { Modal, Button, Table, Spinner, Form, Tabs, Tab } from "react-bootstrap";
+import Swal from 'sweetalert2';
 
 export default function CurrentProjects() {
   const [projects, setProjects] = useState([]);
@@ -10,6 +11,7 @@ export default function CurrentProjects() {
   const [loading, setLoading] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewProject, setViewProject] = useState(null);
+  const [activeLanguage, setActiveLanguage] = useState('ar');
 
   // Fetch Projects from API
   const fetchProjects = async () => {
@@ -43,9 +45,24 @@ export default function CurrentProjects() {
           description2: project.details?.description2 || "",
           description2Ar: project.details?.description2Ar || "",
         },
+        category: project.category || "",
+        categoryAr: project.categoryAr || "",
+        description: project.description || "",
+        descriptionAr: project.descriptionAr || "",
       });
     } else {
-      setSelectedProject(project);
+      // For add mode, initialize with empty details object
+      setSelectedProject({
+        ...project,
+        details: {
+          title: "",
+          titleAr: "",
+          description1: "",
+          description1Ar: "",
+          description2: "",
+          description2Ar: "",
+        }
+      });
     }
     setModalMode(mode);
     setShowModal(true);
@@ -53,7 +70,22 @@ export default function CurrentProjects() {
 
   const handleCloseModal = () => {
     setShowModal(false);
-    setSelectedProject({});
+    setSelectedProject({
+      title: "",
+      titleAr: "",
+      description: "",
+      descriptionAr: "",
+      category: "",
+      categoryAr: "",
+      details: {
+        title: "",
+        titleAr: "",
+        description1: "",
+        description1Ar: "",
+        description2: "",
+        description2Ar: "",
+      }
+    });
   };
 
   const handleSaveProject = async () => {
@@ -67,7 +99,8 @@ export default function CurrentProjects() {
         titleAr: "العنوان بالعربية",
         description: "الوصف بالإنجليزية",
         descriptionAr: "الوصف بالعربية",
-        buttonLink: "رابط الزر",
+        category: "التصنيف بالإنجليزية",
+        categoryAr: "التصنيف بالعربية",
       };
 
       const missingFields = [];
@@ -77,15 +110,21 @@ export default function CurrentProjects() {
         }
       });
 
-      // Check for required images
-      if (modalMode === "add") {
-        if (!selectedProject.image) missingFields.push("الصورة الرئيسية");
-        if (!selectedProject.details?.image)
-          missingFields.push("صورة التفاصيل");
+      if (modalMode === "add" && !selectedProject.image) {
+        missingFields.push("الصورة الرئيسية");
+      }
+
+      if (modalMode === "add" && (!selectedProject.details || !selectedProject.details.image)) {
+        missingFields.push("صورة التفاصيل");
       }
 
       if (missingFields.length > 0) {
-        alert(`الرجاء إكمال الحقول التالية:\n${missingFields.join("\n")}`);
+        await Swal.fire({
+          title: 'حقول مطلوبة',
+          html: `الرجاء إكمال الحقول التالية:<br>${missingFields.join("<br>")}`,
+          icon: 'warning',
+          confirmButtonText: 'حسناً'
+        });
         setLoading(false);
         return;
       }
@@ -126,24 +165,59 @@ export default function CurrentProjects() {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
+      await Swal.fire({
+        title: 'تم بنجاح',
+        text: modalMode === "add" ? 'تم إضافة المشروع بنجاح' : 'تم تحديث المشروع بنجاح',
+        icon: 'success',
+        confirmButtonText: 'حسناً'
+      });
+
       fetchProjects();
       handleCloseModal();
     } catch (error) {
       console.error("Error saving project:", error);
-      alert(error.response?.data?.message || "حدث خطأ أثناء حفظ المشروع");
+      await Swal.fire({
+        title: 'خطأ',
+        text: error.response?.data?.message || "حدث خطأ أثناء حفظ المشروع",
+        icon: 'error',
+        confirmButtonText: 'حسناً'
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const handleDeleteProject = async (id) => {
-    if (window.confirm("هل أنت متأكد من حذف هذا المشروع؟")) {
+    const result = await Swal.fire({
+      title: 'هل أنت متأكد؟',
+      text: "لا يمكن التراجع عن هذا الإجراء!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'نعم، احذف!',
+      cancelButtonText: 'إلغاء'
+    });
+
+    if (result.isConfirmed) {
       setLoading(true);
       try {
         await axios.delete(`http://localhost:3500/api/current-projects/${id}`);
+        await Swal.fire({
+          title: 'تم الحذف!',
+          text: 'تم حذف المشروع بنجاح.',
+          icon: 'success',
+          confirmButtonText: 'حسناً'
+        });
         fetchProjects();
       } catch (error) {
         console.error("Error deleting project:", error);
+        await Swal.fire({
+          title: 'خطأ',
+          text: 'حدث خطأ أثناء حذف المشروع',
+          icon: 'error',
+          confirmButtonText: 'حسناً'
+        });
       } finally {
         setLoading(false);
       }
@@ -182,6 +256,7 @@ export default function CurrentProjects() {
                 <th>الصورة</th>
                 <th>العنوان</th>
                 <th>الوصف</th>
+                <th>التصنيف</th>
                 <th>الإجراءات</th>
               </tr>
             </thead>
@@ -200,7 +275,8 @@ export default function CurrentProjects() {
                     />
                   </td>
                   <td>{project.title}</td>
-                  <td>{project.description.substring(0, 100)}...</td>
+                  <td>{project.description && project.description.substring(0, 50)}...</td>
+                  <td>{project.category}</td>
                   <td>
                     <div className="d-flex gap-2">
                       <Button
@@ -240,224 +316,246 @@ export default function CurrentProjects() {
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {/* Main Project Info */}
-          <div className="mb-3">
-            <label className="form-label">
-              العنوان بالعربية <span className="text-danger">*</span>
-            </label>
-            <input
-              type="text"
-              className="form-control"
-              value={selectedProject.titleAr || ""}
-              onChange={(e) =>
-                setSelectedProject({
-                  ...selectedProject,
-                  titleAr: e.target.value,
-                })
-              }
-              required
-            />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">Title in English</label>
-            <input
-              type="text"
-              className="form-control"
-              value={selectedProject.title || ""}
-              onChange={(e) =>
-                setSelectedProject({
-                  ...selectedProject,
-                  title: e.target.value,
-                })
-              }
-              required
-            />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">
-              رابط الزر <span className="text-danger">*</span>
-            </label>
-            <input
-              type="text"
-              className="form-control"
-              value={selectedProject.buttonLink || ""}
-              onChange={(e) =>
-                setSelectedProject({
-                  ...selectedProject,
-                  buttonLink: e.target.value,
-                })
-              }
-              required
-            />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">الوصف بالعربية</label>
-            <textarea
-              className="form-control"
-              value={selectedProject.descriptionAr || ""}
-              onChange={(e) =>
-                setSelectedProject({
-                  ...selectedProject,
-                  descriptionAr: e.target.value,
-                })
-              }
-            />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">Description in English</label>
-            <textarea
-              className="form-control"
-              value={selectedProject.description || ""}
-              onChange={(e) =>
-                setSelectedProject({
-                  ...selectedProject,
-                  description: e.target.value,
-                })
-              }
-            />
-          </div>
-
-          {/* Main Project Image */}
-          <div className="mb-3">
-            <label className="form-label">
-              الصورة الرئيسية <span className="text-danger">*</span>
-            </label>
-            <input
-              type="file"
-              className="form-control"
-              accept="image/*"
-              onChange={(e) =>
-                setSelectedProject({
-                  ...selectedProject,
-                  image: e.target.files[0],
-                })
-              }
-              required
-            />
-          </div>
-
-          {/* Details Section */}
-          <h5 className="mt-4 mb-3">تفاصيل المشروع</h5>
-          <div className="mb-3">
-            <label className="form-label">عنوان التفاصيل بالعربية</label>
-            <input
-              type="text"
-              className="form-control"
-              value={selectedProject.details?.titleAr || ""}
-              onChange={(e) =>
-                setSelectedProject({
-                  ...selectedProject,
-                  details: {
-                    ...selectedProject.details,
-                    titleAr: e.target.value,
-                  },
-                })
-              }
-            />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">Details Title in English</label>
-            <input
-              type="text"
-              className="form-control"
-              value={selectedProject.details?.title || ""}
-              onChange={(e) =>
-                setSelectedProject({
-                  ...selectedProject,
-                  details: {
-                    ...selectedProject.details,
-                    title: e.target.value,
-                  },
-                })
-              }
-            />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">الوصف الأول بالعربية</label>
-            <textarea
-              className="form-control"
-              value={selectedProject.details?.description1Ar || ""}
-              onChange={(e) =>
-                setSelectedProject({
-                  ...selectedProject,
-                  details: {
-                    ...selectedProject.details,
-                    description1Ar: e.target.value,
-                  },
-                })
-              }
-            />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">First Description in English</label>
-            <textarea
-              className="form-control"
-              value={selectedProject.details?.description1 || ""}
-              onChange={(e) =>
-                setSelectedProject({
-                  ...selectedProject,
-                  details: {
-                    ...selectedProject.details,
-                    description1: e.target.value,
-                  },
-                })
-              }
-            />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">الوصف الثاني بالعربية</label>
-            <textarea
-              className="form-control"
-              value={selectedProject.details?.description2Ar || ""}
-              onChange={(e) =>
-                setSelectedProject({
-                  ...selectedProject,
-                  details: {
-                    ...selectedProject.details,
-                    description2Ar: e.target.value,
-                  },
-                })
-              }
-            />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">Second Description in English</label>
-            <textarea
-              className="form-control"
-              value={selectedProject.details?.description2 || ""}
-              onChange={(e) =>
-                setSelectedProject({
-                  ...selectedProject,
-                  details: {
-                    ...selectedProject.details,
-                    description2: e.target.value,
-                  },
-                })
-              }
-            />
-          </div>
-
-          {/* Details Image */}
-          <div className="mb-3">
-            <label className="form-label">
-              صورة التفاصيل <span className="text-danger">*</span>
-            </label>
-            <input
-              type="file"
-              className="form-control"
-              accept="image/*"
-              onChange={(e) =>
-                setSelectedProject({
-                  ...selectedProject,
-                  details: {
-                    ...selectedProject.details,
+          <Form>
+            <Form.Group className="mb-4">
+              <Form.Label className="fw-bold">صورة المشروع</Form.Label>
+              <Form.Control
+                type="file"
+                onChange={(e) =>
+                  setSelectedProject({
+                    ...selectedProject,
                     image: e.target.files[0],
-                  },
-                })
-              }
-              required
-            />
-          </div>
+                  })
+                }
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-4">
+              <Form.Label className="fw-bold">صورة التفاصيل</Form.Label>
+              <Form.Control
+                type="file"
+                onChange={(e) =>
+                  setSelectedProject({
+                    ...selectedProject,
+                    details: {
+                      ...selectedProject.details,
+                      image: e.target.files[0],
+                    },
+                  })
+                }
+              />
+            </Form.Group>
+
+            <Tabs
+              activeKey={activeLanguage}
+              onSelect={(k) => setActiveLanguage(k)}
+              className="mb-4"
+            >
+              <Tab eventKey="ar" title="العربية">
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-bold">العنوان</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={selectedProject.titleAr || ""}
+                    onChange={(e) =>
+                      setSelectedProject({
+                        ...selectedProject,
+                        titleAr: e.target.value,
+                      })
+                    }
+                  />
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-bold">الوصف</Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    rows={3}
+                    value={selectedProject.descriptionAr || ""}
+                    onChange={(e) =>
+                      setSelectedProject({
+                        ...selectedProject,
+                        descriptionAr: e.target.value,
+                      })
+                    }
+                  />
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-bold">التصنيف</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={selectedProject.categoryAr || ""}
+                    onChange={(e) =>
+                      setSelectedProject({
+                        ...selectedProject,
+                        categoryAr: e.target.value,
+                      })
+                    }
+                  />
+                </Form.Group>
+
+                {/* Arabic Details */}
+                <div className="border rounded p-3 mb-3">
+                  <h6 className="mb-3">تفاصيل إضافية</h6>
+                  <Form.Group className="mb-3">
+                    <Form.Label>عنوان التفاصيل</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={selectedProject.details?.titleAr || ""}
+                      onChange={(e) =>
+                        setSelectedProject({
+                          ...selectedProject,
+                          details: {
+                            ...selectedProject.details,
+                            titleAr: e.target.value,
+                          },
+                        })
+                      }
+                    />
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>الوصف الأول</Form.Label>
+                    <Form.Control
+                      as="textarea"
+                      rows={3}
+                      value={selectedProject.details?.description1Ar || ""}
+                      onChange={(e) =>
+                        setSelectedProject({
+                          ...selectedProject,
+                          details: {
+                            ...selectedProject.details,
+                            description1Ar: e.target.value,
+                          },
+                        })
+                      }
+                    />
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>الوصف الثاني</Form.Label>
+                    <Form.Control
+                      as="textarea"
+                      rows={3}
+                      value={selectedProject.details?.description2Ar || ""}
+                      onChange={(e) =>
+                        setSelectedProject({
+                          ...selectedProject,
+                          details: {
+                            ...selectedProject.details,
+                            description2Ar: e.target.value,
+                          },
+                        })
+                      }
+                    />
+                  </Form.Group>
+                </div>
+              </Tab>
+
+              <Tab eventKey="en" title="English">
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-bold">Title</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={selectedProject.title || ""}
+                    onChange={(e) =>
+                      setSelectedProject({
+                        ...selectedProject,
+                        title: e.target.value,
+                      })
+                    }
+                  />
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-bold">Description</Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    rows={3}
+                    value={selectedProject.description || ""}
+                    onChange={(e) =>
+                      setSelectedProject({
+                        ...selectedProject,
+                        description: e.target.value,
+                      })
+                    }
+                  />
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-bold">Category</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={selectedProject.category || ""}
+                    onChange={(e) =>
+                      setSelectedProject({
+                        ...selectedProject,
+                        category: e.target.value,
+                      })
+                    }
+                  />
+                </Form.Group>
+
+                {/* English Details */}
+                <div className="border rounded p-3 mb-3">
+                  <h6 className="mb-3">Additional Details</h6>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Details Title</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={selectedProject.details?.title || ""}
+                      onChange={(e) =>
+                        setSelectedProject({
+                          ...selectedProject,
+                          details: {
+                            ...selectedProject.details,
+                            title: e.target.value,
+                          },
+                        })
+                      }
+                    />
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>First Description</Form.Label>
+                    <Form.Control
+                      as="textarea"
+                      rows={3}
+                      value={selectedProject.details?.description1 || ""}
+                      onChange={(e) =>
+                        setSelectedProject({
+                          ...selectedProject,
+                          details: {
+                            ...selectedProject.details,
+                            description1: e.target.value,
+                          },
+                        })
+                      }
+                    />
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>Second Description</Form.Label>
+                    <Form.Control
+                      as="textarea"
+                      rows={3}
+                      value={selectedProject.details?.description2 || ""}
+                      onChange={(e) =>
+                        setSelectedProject({
+                          ...selectedProject,
+                          details: {
+                            ...selectedProject.details,
+                            description2: e.target.value,
+                          },
+                        })
+                      }
+                    />
+                  </Form.Group>
+                </div>
+              </Tab>
+            </Tabs>
+          </Form>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={handleCloseModal}>
@@ -492,59 +590,43 @@ export default function CurrentProjects() {
               </div>
 
               <div className="mb-4">
-                <h5 className="border-bottom pb-2">معلومات المشروع</h5>
-                <div className="row">
-                  <div className="col-md-6">
-                    <p>
-                      <strong>العنوان:</strong> {viewProject.title}
-                    </p>
-                    <p>
-                      <strong>رابط الزر:</strong> {viewProject.buttonLink}
-                    </p>
-                  </div>
-                  <div className="col-md-12">
-                    <p>
-                      <strong>الوصف:</strong>
-                    </p>
-                    <p className="text-muted">{viewProject.description}</p>
-                  </div>
-                </div>
+                <h5 className="border-bottom pb-2">العنوان</h5>
+                <p className="text-muted mb-1">بالعربية: {viewProject.titleAr}</p>
+                <p>بالإنجليزية: {viewProject.title}</p>
               </div>
 
-              {viewProject.details && (
-                <div className="project-details mt-4">
-                  <h5 className="border-bottom pb-2">تفاصيل إضافية</h5>
-                  {viewProject.details.image && (
-                    <div className="text-center my-3">
-                      <img
-                        src={`http://localhost:3500/uploads/current-projects/${viewProject.details.image}`}
-                        alt="تفاصيل"
-                        className="img-fluid"
-                        style={{ maxHeight: "200px", objectFit: "contain" }}
-                      />
-                    </div>
-                  )}
-                  <p>
-                    <strong>عنوان التفاصيل:</strong> {viewProject.details.title}
-                  </p>
-                  <div className="mt-3">
-                    <p>
-                      <strong>الوصف الأول:</strong>
-                    </p>
-                    <p className="text-muted">
-                      {viewProject.details.description1}
-                    </p>
-                  </div>
-                  <div className="mt-3">
-                    <p>
-                      <strong>الوصف الثاني:</strong>
-                    </p>
-                    <p className="text-muted">
-                      {viewProject.details.description2}
-                    </p>
-                  </div>
+              <div className="mb-4">
+                <h5 className="border-bottom pb-2">الوصف</h5>
+                <p className="text-muted mb-1">بالعربية: {viewProject.descriptionAr}</p>
+                <p>بالإنجليزية: {viewProject.description}</p>
+              </div>
+
+              <div className="mb-4">
+                <h5 className="border-bottom pb-2">التصنيف</h5>
+                <p className="text-muted mb-1">بالعربية: {viewProject.categoryAr}</p>
+                <p>بالإنجليزية: {viewProject.category}</p>
+              </div>
+
+              <div className="mb-4">
+                <h5 className="border-bottom pb-2">تفاصيل إضافية</h5>
+                <div className="mb-3">
+                  <h6>العنوان</h6>
+                  <p className="text-muted mb-1">بالعربية: {viewProject.details?.titleAr}</p>
+                  <p>بالإنجليزية: {viewProject.details?.title}</p>
                 </div>
-              )}
+
+                <div className="mb-3">
+                  <h6>الوصف الأول</h6>
+                  <p className="text-muted mb-1">بالعربية: {viewProject.details?.description1Ar}</p>
+                  <p>بالإنجليزية: {viewProject.details?.description1}</p>
+                </div>
+
+                <div className="mb-3">
+                  <h6>الوصف الثاني</h6>
+                  <p className="text-muted mb-1">بالعربية: {viewProject.details?.description2Ar}</p>
+                  <p>بالإنجليزية: {viewProject.details?.description2}</p>
+                </div>
+              </div>
             </div>
           )}
         </Modal.Body>

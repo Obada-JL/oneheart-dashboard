@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Modal, Button, Table, Spinner } from "react-bootstrap";
+import { Modal, Button, Table, Spinner, Tabs, Tab, Form } from "react-bootstrap";
 import Swal from "sweetalert2"; // Add this import
 
 export default function SponsorshipsPage() {
@@ -11,6 +11,7 @@ export default function SponsorshipsPage() {
   const [loading, setLoading] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewSponsorship, setViewSponsorship] = useState(null);
+  const [activeLanguage, setActiveLanguage] = useState('ar');
 
   const fetchSponsorships = async () => {
     setLoading(true);
@@ -31,29 +32,46 @@ export default function SponsorshipsPage() {
   }, []);
 
   const handleShowModal = (sponsorship = {}, mode = "add") => {
+    console.log("Opening modal with sponsorship:", sponsorship);
+    
     if (mode === "edit") {
+      // Ensure details object exists and has all required fields
+      const details = sponsorship.details || {};
+      
       setSelectedSponsorship({
-        ...sponsorship,
-        details: sponsorship.details || {
-          title: "",
-          titleAr: "",
-          description1: "",
-          description1Ar: "",
-          description2: "",
-          description2Ar: "",
+        _id: sponsorship._id,
+        title: sponsorship.title || "",
+        titleAr: sponsorship.titleAr || "",
+        description: sponsorship.description || "",
+        descriptionAr: sponsorship.descriptionAr || "",
+        category: sponsorship.category || "",
+        categoryAr: sponsorship.categoryAr || "",
+        total: sponsorship.total || "",
+        remaining: sponsorship.remaining || "",
+        sponsorshipImage: sponsorship.sponsorshipImage || "",
+        detailsImage: sponsorship.detailsImage || "",
+        details: {
+          title: details.title || "",
+          titleAr: details.titleAr || "",
+          description1: details.description1 || "",
+          description1Ar: details.description1Ar || "",
+          description2: details.description2 || "",
+          description2Ar: details.description2Ar || "",
         }
       });
+      console.log("Set selected sponsorship for edit:", sponsorship);
     } else {
       setSelectedSponsorship({
         title: "",
         titleAr: "",
         description: "",
         descriptionAr: "",
-        donationLink: "",
         category: "",
         categoryAr: "",
         total: "",
         remaining: "",
+        sponsorshipImage: "",
+        detailsImage: "",
         details: {
           title: "",
           titleAr: "",
@@ -69,8 +87,28 @@ export default function SponsorshipsPage() {
   };
 
   const handleCloseModal = () => {
+    console.log("Closing modal and resetting form");
     setShowModal(false);
-    setSelectedSponsorship({});
+    setSelectedSponsorship({
+      title: "",
+      titleAr: "",
+      description: "",
+      descriptionAr: "",
+      category: "",
+      categoryAr: "",
+      total: "",
+      remaining: "",
+      sponsorshipImage: "",
+      detailsImage: "",
+      details: {
+        title: "",
+        titleAr: "",
+        description1: "",
+        description1Ar: "",
+        description2: "",
+        description2Ar: "",
+      }
+    });
   };
 
   const handleShowViewModal = (sponsorship) => {
@@ -92,11 +130,10 @@ export default function SponsorshipsPage() {
       titleAr: "العنوان بالعربية",
       description: "الوصف بالإنجليزية",
       descriptionAr: "الوصف بالعربية",
-      donationLink: "رابط التبرع",
       category: "التصنيف بالإنجليزية",
       categoryAr: "التصنيف بالعربية",
       total: "المبلغ الكلي",
-      remaining: "المبلغ المتبقي",
+      remaining: "المبلغ المتبقي"
     };
 
     Object.entries(mainFields).forEach(([field, label]) => {
@@ -119,17 +156,23 @@ export default function SponsorshipsPage() {
 
     Object.entries(detailsFields).forEach(([field, label]) => {
       const value = details[field];
-      if (!value || value.trim() === '') {
+      if (!value || (typeof value === 'string' && value.trim() === '')) {
         missingFields.push(label);
       }
     });
 
-    // Check image for new sponsorships
+    // Check main image for new sponsorships
     if (modalMode === "add" && !selectedSponsorship.sponsorshipImage) {
-      missingFields.push("الصورة");
+      missingFields.push("الصورة الرئيسية");
     }
 
+    // Check details image for new sponsorships (optional)
+    // if (modalMode === "add" && !selectedSponsorship.detailsImage) {
+    //   missingFields.push("صورة التفاصيل");
+    // }
+
     if (missingFields.length > 0) {
+      console.log("Missing fields:", missingFields);
       Swal.fire({
         icon: "error",
         title: "حقول مفقودة!",
@@ -159,18 +202,21 @@ export default function SponsorshipsPage() {
         description2Ar: selectedSponsorship.details?.description2Ar || "",
       };
 
+      console.log("Saving sponsorship with details:", details);
+
       // Prepare the data
       const data = {
         title: selectedSponsorship.title,
         titleAr: selectedSponsorship.titleAr,
         description: selectedSponsorship.description,
         descriptionAr: selectedSponsorship.descriptionAr,
-        donationLink: selectedSponsorship.donationLink,
         category: selectedSponsorship.category,
         categoryAr: selectedSponsorship.categoryAr,
         total: selectedSponsorship.total,
         remaining: selectedSponsorship.remaining,
       };
+
+      console.log("Saving sponsorship with data:", data);
 
       // Append main fields to formData
       Object.entries(data).forEach(([key, value]) => {
@@ -180,13 +226,24 @@ export default function SponsorshipsPage() {
       // Append details as JSON string
       formData.append("details", JSON.stringify(details));
 
-      // Append image if new one is selected
+      // Append main image if new one is selected
       if (selectedSponsorship.sponsorshipImage instanceof File) {
         formData.append("sponsorshipImage", selectedSponsorship.sponsorshipImage);
+        console.log("Appending main image file:", selectedSponsorship.sponsorshipImage.name);
       }
 
+      // Append details image if new one is selected
+      if (selectedSponsorship.detailsImage instanceof File) {
+        formData.append("detailsImage", selectedSponsorship.detailsImage);
+        console.log("Appending details image file:", selectedSponsorship.detailsImage.name);
+      }
+
+      let response;
       if (modalMode === "add") {
-        await axios.post("http://localhost:3500/api/sponsorships", formData);
+        console.log("Creating new sponsorship");
+        response = await axios.post("http://localhost:3500/api/sponsorships", formData);
+        console.log("Created sponsorship:", response.data);
+        
         Swal.fire({
           icon: "success",
           title: "تم بنجاح!",
@@ -194,10 +251,13 @@ export default function SponsorshipsPage() {
           confirmButtonText: "حسناً",
         });
       } else {
-        await axios.put(
+        console.log(`Updating sponsorship with ID: ${selectedSponsorship._id}`);
+        response = await axios.put(
           `http://localhost:3500/api/sponsorships/${selectedSponsorship._id}`,
           formData
         );
+        console.log("Updated sponsorship:", response.data);
+        
         Swal.fire({
           icon: "success",
           title: "تم بنجاح!",
@@ -210,6 +270,8 @@ export default function SponsorshipsPage() {
       handleCloseModal();
     } catch (error) {
       console.error("Error saving sponsorship:", error);
+      console.error("Error response:", error.response?.data);
+      
       Swal.fire({
         icon: "error",
         title: "خطأ!",
@@ -280,8 +342,8 @@ export default function SponsorshipsPage() {
                 <th>الصورة</th>
                 <th>العنوان</th>
                 <th>التصنيف</th>
-                <th>المبلغ الكلي</th>
-                <th>المبلغ المتبقي</th>
+                <th>المبلغ المطلوب</th>
+                <th>المبلغ المدفوع</th>
                 <th>الإجراءات</th>
               </tr>
             </thead>
@@ -344,9 +406,9 @@ export default function SponsorshipsPage() {
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {/* Image Upload */}
+          {/* Main Image Upload */}
           <div className="mb-4">
-            <label className="form-label fw-bold">صورة الكفالة</label>
+            <label className="form-label fw-bold">صورة الكفالة الرئيسية</label>
             <input
               type="file"
               className="form-control"
@@ -357,249 +419,297 @@ export default function SponsorshipsPage() {
                 })
               }
             />
+            {modalMode === "edit" && selectedSponsorship.sponsorshipImage && typeof selectedSponsorship.sponsorshipImage === 'string' && (
+              <div className="mt-2">
+                <img
+                  src={`http://localhost:3500/uploads/sponsorships/${selectedSponsorship.sponsorshipImage}`}
+                  alt="Current main"
+                  style={{ width: "100px", height: "60px", objectFit: "cover" }}
+                />
+                <small className="d-block mt-1">الصورة الرئيسية الحالية</small>
+              </div>
+            )}
           </div>
 
-          {/* Title Section */}
+          {/* Details Image Upload */}
           <div className="mb-4">
-            <h6 className="mb-3 border-bottom pb-2">العنوان</h6>
-            <div className="mb-3">
-              <label className="form-label">بالعربية</label>
-              <input
-                type="text"
-                className="form-control"
-                value={selectedSponsorship.titleAr || ""}
-                onChange={(e) =>
-                  setSelectedSponsorship({
-                    ...selectedSponsorship,
-                    titleAr: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div className="mb-3">
-              <label className="form-label">بالإنجليزية</label>
-              <input
-                type="text"
-                className="form-control"
-                value={selectedSponsorship.title || ""}
-                onChange={(e) =>
-                  setSelectedSponsorship({
-                    ...selectedSponsorship,
-                    title: e.target.value,
-                  })
-                }
-              />
-            </div>
-          </div>
-
-          {/* Description Section */}
-          <div className="mb-4">
-            <h6 className="mb-3 border-bottom pb-2">الوصف</h6>
-            <div className="mb-3">
-              <label className="form-label">بالعربية</label>
-              <textarea
-                className="form-control"
-                value={selectedSponsorship.descriptionAr || ""}
-                onChange={(e) =>
-                  setSelectedSponsorship({
-                    ...selectedSponsorship,
-                    descriptionAr: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div className="mb-3">
-              <label className="form-label">بالإنجليزية</label>
-              <textarea
-                className="form-control"
-                value={selectedSponsorship.description || ""}
-                onChange={(e) =>
-                  setSelectedSponsorship({
-                    ...selectedSponsorship,
-                    description: e.target.value,
-                  })
-                }
-              />
-            </div>
-          </div>
-
-          {/* Category Section */}
-          <div className="mb-4">
-            <h6 className="mb-3 border-bottom pb-2">التصنيف</h6>
-            <div className="mb-3">
-              <label className="form-label">التصنيف بالعربية</label>
-              <input
-                type="text"
-                className="form-control"
-                value={selectedSponsorship.categoryAr || ""}
-                onChange={(e) =>
-                  setSelectedSponsorship({
-                    ...selectedSponsorship,
-                    categoryAr: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div className="mb-3">
-              <label className="form-label">التصنيف بالإنجليزية</label>
-              <input
-                type="text"
-                className="form-control"
-                value={selectedSponsorship.category || ""}
-                onChange={(e) =>
-                  setSelectedSponsorship({
-                    ...selectedSponsorship,
-                    category: e.target.value,
-                  })
-                }
-              />
-            </div>
-          </div>
-
-          <div className="mb-3">
-            <label className="form-label">رابط التبرع</label>
+            <label className="form-label fw-bold">صورة تفاصيل الكفالة</label>
             <input
-              type="text"
+              type="file"
               className="form-control"
-              value={selectedSponsorship.donationLink || ""}
               onChange={(e) =>
                 setSelectedSponsorship({
                   ...selectedSponsorship,
-                  donationLink: e.target.value,
+                  detailsImage: e.target.files[0],
                 })
               }
             />
+            {modalMode === "edit" && selectedSponsorship.detailsImage && typeof selectedSponsorship.detailsImage === 'string' && (
+              <div className="mt-2">
+                <img
+                  src={`http://localhost:3500/uploads/sponsorships/${selectedSponsorship.detailsImage}`}
+                  alt="Current details"
+                  style={{ width: "100px", height: "60px", objectFit: "cover" }}
+                />
+                <small className="d-block mt-1">صورة التفاصيل الحالية</small>
+              </div>
+            )}
           </div>
 
-          <div className="mb-3">
-            <label className="form-label">المبلغ الكلي</label>
-            <input
-              type="number"
-              className="form-control"
-              value={selectedSponsorship.total || ""}
-              onChange={(e) =>
-                setSelectedSponsorship({
-                  ...selectedSponsorship,
-                  total: e.target.value,
-                })
-              }
-            />
-          </div>
+          <Tabs
+            activeKey={activeLanguage}
+            onSelect={(k) => setActiveLanguage(k)}
+            className="mb-4"
+          >
+            <Tab eventKey="ar" title="العربية">
+              <Form>
+                {/* Arabic Title */}
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-bold">العنوان</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={selectedSponsorship.titleAr || ""}
+                    onChange={(e) =>
+                      setSelectedSponsorship({
+                        ...selectedSponsorship,
+                        titleAr: e.target.value,
+                      })
+                    }
+                  />
+                </Form.Group>
 
-          <div className="mb-3">
-            <label className="form-label">المبلغ المتبقي</label>
-            <input
-              type="number"
-              className="form-control"
-              value={selectedSponsorship.remaining || ""}
-              onChange={(e) =>
-                setSelectedSponsorship({
-                  ...selectedSponsorship,
-                  remaining: e.target.value,
-                })
-              }
-            />
-          </div>
+                {/* Arabic Description */}
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-bold">الوصف</Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    rows={4}
+                    value={selectedSponsorship.descriptionAr || ""}
+                    onChange={(e) =>
+                      setSelectedSponsorship({
+                        ...selectedSponsorship,
+                        descriptionAr: e.target.value,
+                      })
+                    }
+                  />
+                </Form.Group>
 
-          <div className="mb-4">
-            <h6 className="mb-3 border-bottom pb-2">تفاصيل إضافية</h6>
-            <div className="mb-3">
-              <label className="form-label">عنوان التفاصيل بالعربية</label>
-              <input
-                type="text"
-                className="form-control"
-                value={selectedSponsorship.details?.titleAr || ""}
-                onChange={(e) =>
-                  setSelectedSponsorship({
-                    ...selectedSponsorship,
-                    details: {
-                      ...selectedSponsorship.details,
-                      titleAr: e.target.value,
-                    },
-                  })
-                }
-              />
-            </div>
-            <div className="mb-3">
-              <label className="form-label">عنوان التفاصيل بالإنجليزية</label>
-              <input
-                type="text"
-                className="form-control"
-                value={selectedSponsorship.details?.title || ""}
-                onChange={(e) =>
-                  setSelectedSponsorship({
-                    ...selectedSponsorship,
-                    details: {
-                      ...selectedSponsorship.details,
-                      title: e.target.value,
-                    },
-                  })
-                }
-              />
-            </div>
-            <div className="mb-3">
-              <label className="form-label">الوصف الأول بالعربية</label>
-              <textarea
-                className="form-control"
-                value={selectedSponsorship.details?.description1Ar || ""}
-                onChange={(e) =>
-                  setSelectedSponsorship({
-                    ...selectedSponsorship,
-                    details: {
-                      ...selectedSponsorship.details,
-                      description1Ar: e.target.value,
-                    },
-                  })
-                }
-              />
-            </div>
-            <div className="mb-3">
-              <label className="form-label">الوصف الأول بالإنجليزية</label>
-              <textarea
-                className="form-control"
-                value={selectedSponsorship.details?.description1 || ""}
-                onChange={(e) =>
-                  setSelectedSponsorship({
-                    ...selectedSponsorship,
-                    details: {
-                      ...selectedSponsorship.details,
-                      description1: e.target.value,
-                    },
-                  })
-                }
-              />
-            </div>
-            <div className="mb-3">
-              <label className="form-label">الوصف الثاني بالعربية</label>
-              <textarea
-                className="form-control"
-                value={selectedSponsorship.details?.description2Ar || ""}
-                onChange={(e) =>
-                  setSelectedSponsorship({
-                    ...selectedSponsorship,
-                    details: {
-                      ...selectedSponsorship.details,
-                      description2Ar: e.target.value,
-                    },
-                  })
-                }
-              />
-            </div>
-            <div className="mb-3">
-              <label className="form-label">الوصف الثاني بالإنجليزية</label>
-              <textarea
-                className="form-control"
-                value={selectedSponsorship.details?.description2 || ""}
-                onChange={(e) =>
-                  setSelectedSponsorship({
-                    ...selectedSponsorship,
-                    details: {
-                      ...selectedSponsorship.details,
-                      description2: e.target.value,
-                    },
-                  })
-                }
-              />
+                {/* Arabic Category */}
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-bold">التصنيف</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={selectedSponsorship.categoryAr || ""}
+                    onChange={(e) =>
+                      setSelectedSponsorship({
+                        ...selectedSponsorship,
+                        categoryAr: e.target.value,
+                      })
+                    }
+                  />
+                </Form.Group>
+
+                {/* Arabic Details */}
+                <div className="border rounded p-3 mb-3">
+                  <h6 className="mb-3">تفاصيل إضافية</h6>
+                  <Form.Group className="mb-3">
+                    <Form.Label>عنوان التفاصيل</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={selectedSponsorship.details?.titleAr || ""}
+                      onChange={(e) =>
+                        setSelectedSponsorship({
+                          ...selectedSponsorship,
+                          details: {
+                            ...selectedSponsorship.details,
+                            titleAr: e.target.value,
+                          },
+                        })
+                      }
+                    />
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>الوصف الأول</Form.Label>
+                    <Form.Control
+                      as="textarea"
+                      rows={3}
+                      value={selectedSponsorship.details?.description1Ar || ""}
+                      onChange={(e) =>
+                        setSelectedSponsorship({
+                          ...selectedSponsorship,
+                          details: {
+                            ...selectedSponsorship.details,
+                            description1Ar: e.target.value,
+                          },
+                        })
+                      }
+                    />
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>الوصف الثاني</Form.Label>
+                    <Form.Control
+                      as="textarea"
+                      rows={3}
+                      value={selectedSponsorship.details?.description2Ar || ""}
+                      onChange={(e) =>
+                        setSelectedSponsorship({
+                          ...selectedSponsorship,
+                          details: {
+                            ...selectedSponsorship.details,
+                            description2Ar: e.target.value,
+                          },
+                        })
+                      }
+                    />
+                  </Form.Group>
+                </div>
+              </Form>
+            </Tab>
+
+            <Tab eventKey="en" title="English">
+              <Form>
+                {/* English Title */}
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-bold">Title</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={selectedSponsorship.title || ""}
+                    onChange={(e) =>
+                      setSelectedSponsorship({
+                        ...selectedSponsorship,
+                        title: e.target.value,
+                      })
+                    }
+                  />
+                </Form.Group>
+
+                {/* English Description */}
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-bold">Description</Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    rows={4}
+                    value={selectedSponsorship.description || ""}
+                    onChange={(e) =>
+                      setSelectedSponsorship({
+                        ...selectedSponsorship,
+                        description: e.target.value,
+                      })
+                    }
+                  />
+                </Form.Group>
+
+                {/* English Category */}
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-bold">Category</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={selectedSponsorship.category || ""}
+                    onChange={(e) =>
+                      setSelectedSponsorship({
+                        ...selectedSponsorship,
+                        category: e.target.value,
+                      })
+                    }
+                  />
+                </Form.Group>
+
+                {/* English Details */}
+                <div className="border rounded p-3 mb-3">
+                  <h6 className="mb-3">Additional Details</h6>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Details Title</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={selectedSponsorship.details?.title || ""}
+                      onChange={(e) =>
+                        setSelectedSponsorship({
+                          ...selectedSponsorship,
+                          details: {
+                            ...selectedSponsorship.details,
+                            title: e.target.value,
+                          },
+                        })
+                      }
+                    />
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>First Description</Form.Label>
+                    <Form.Control
+                      as="textarea"
+                      rows={3}
+                      value={selectedSponsorship.details?.description1 || ""}
+                      onChange={(e) =>
+                        setSelectedSponsorship({
+                          ...selectedSponsorship,
+                          details: {
+                            ...selectedSponsorship.details,
+                            description1: e.target.value,
+                          },
+                        })
+                      }
+                    />
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>Second Description</Form.Label>
+                    <Form.Control
+                      as="textarea"
+                      rows={3}
+                      value={selectedSponsorship.details?.description2 || ""}
+                      onChange={(e) =>
+                        setSelectedSponsorship({
+                          ...selectedSponsorship,
+                          details: {
+                            ...selectedSponsorship.details,
+                            description2: e.target.value,
+                          },
+                        })
+                      }
+                    />
+                  </Form.Group>
+                </div>
+              </Form>
+            </Tab>
+          </Tabs>
+
+          {/* Common Fields */}
+          <div className="border rounded p-3">
+            <h6 className="mb-3">المبالغ / Amounts</h6>
+            <div className="row">
+              <div className="col-md-6">
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-bold">المبلغ المطلوب / Required Amount</Form.Label>
+                  <Form.Control
+                    type="number"
+                    value={selectedSponsorship.total || ""}
+                    onChange={(e) =>
+                      setSelectedSponsorship({
+                        ...selectedSponsorship,
+                        total: e.target.value,
+                      })
+                    }
+                  />
+                </Form.Group>
+              </div>
+              <div className="col-md-6">
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-bold">المبلغ المدفوع / Paid Amount</Form.Label>
+                  <Form.Control
+                    type="number"
+                    value={selectedSponsorship.remaining || ""}
+                    onChange={(e) =>
+                      setSelectedSponsorship({
+                        ...selectedSponsorship,
+                        remaining: e.target.value,
+                      })
+                    }
+                  />
+                </Form.Group>
+              </div>
             </div>
           </div>
         </Modal.Body>
@@ -621,6 +731,7 @@ export default function SponsorshipsPage() {
           {viewSponsorship && (
             <div className="view-sponsorship-details">
               <div className="text-center mb-4">
+                <h6 className="mb-2">الصورة الرئيسية</h6>
                 <img
                   src={`http://localhost:3500/uploads/sponsorships/${viewSponsorship.sponsorshipImage}`}
                   alt={viewSponsorship.title}
@@ -628,6 +739,18 @@ export default function SponsorshipsPage() {
                   style={{ maxHeight: "300px", objectFit: "contain" }}
                 />
               </div>
+
+              {viewSponsorship.detailsImage && (
+                <div className="text-center mb-4">
+                  <h6 className="mb-2">صورة التفاصيل</h6>
+                  <img
+                    src={`http://localhost:3500/uploads/sponsorships/${viewSponsorship.detailsImage}`}
+                    alt={`${viewSponsorship.title} details`}
+                    className="img-fluid"
+                    style={{ maxHeight: "300px", objectFit: "contain" }}
+                  />
+                </div>
+              )}
 
               <div className="mb-4">
                 <h5 className="border-bottom pb-2">العنوان</h5>
@@ -651,13 +774,6 @@ export default function SponsorshipsPage() {
                 <h5 className="border-bottom pb-2">المبالغ</h5>
                 <p className="mb-1">المبلغ الكلي: {viewSponsorship.total}</p>
                 <p>المبلغ المتبقي: {viewSponsorship.remaining}</p>
-              </div>
-
-              <div className="mb-4">
-                <h5 className="border-bottom pb-2">رابط التبرع</h5>
-                <a href={viewSponsorship.donationLink} target="_blank" rel="noopener noreferrer">
-                  {viewSponsorship.donationLink}
-                </a>
               </div>
 
               <div className="mb-4">
