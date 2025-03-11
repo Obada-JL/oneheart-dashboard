@@ -13,7 +13,7 @@ export default function DocumentationVideos() {
     try {
       setLoading(true);
       const response = await axios.get(
-        `http://localhost:3500/api/videos/${docId}`
+        `https://oneheart.team.com/api/videos/${docId}`
       );
       setVideos(response.data);
     } catch (error) {
@@ -40,7 +40,7 @@ export default function DocumentationVideos() {
 
     try {
       setLoading(true);
-      await axios.post("http://localhost:3500/api/videos", formData, {
+      await axios.post("https://oneheart.team.com/api/videos", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       Swal.fire("تم!", "تم رفع الفيديوهات بنجاح", "success");
@@ -67,7 +67,7 @@ export default function DocumentationVideos() {
 
     if (result.isConfirmed) {
       try {
-        await axios.delete(`http://localhost:3500/api/videos/${videoId}`);
+        await axios.delete(`https://oneheart.team.com/api/videos/${videoId}`);
         fetchVideos();
         Swal.fire("تم الحذف!", "تم حذف الفيديو بنجاح.", "success");
       } catch (error) {
@@ -112,7 +112,7 @@ export default function DocumentationVideos() {
                   style={{ height: "300px", objectFit: "cover" }}
                 >
                   <source
-                    src={`http://localhost:3500/uploads/documentation/${video.video}`}
+                    src={`https://oneheart.team.com/uploads/documentation/${video.video}`}
                     type="video/mp4"
                   />
                   Your browser does not support the video tag.

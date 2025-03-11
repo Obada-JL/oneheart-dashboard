@@ -23,7 +23,7 @@ const SettingsComponents = () => {
         activeTab === "counter" ? "counter" : 
         activeTab === "programs" ? "programs" : "about-us";
       
-      const response = await axios.get(`http://localhost:3500/api/${endpoint}`);
+      const response = await axios.get(`https://oneheart.team.com/api/${endpoint}`);
       console.log(`Raw ${activeTab} data:`, response.data);
       
       if (activeTab === "about") {
@@ -152,10 +152,10 @@ const SettingsComponents = () => {
 
         try {
           if (modalMode === "add") {
-            await axios.post(`http://localhost:3500/api/${endpoint}`, formData);
+            await axios.post(`https://oneheart.team.com/api/${endpoint}`, formData);
           } else {
             await axios.put(
-              `http://localhost:3500/api/${endpoint}/${selectedItem._id}`,
+              `https://oneheart.team.com/api/${endpoint}/${selectedItem._id}`,
               formData
             );
           }
@@ -298,14 +298,14 @@ const SettingsComponents = () => {
         try {
           if (modalMode === "add") {
             console.log("Creating new about us entry");
-            const response = await axios.post(`http://localhost:3500/api/${endpoint}`, formData, {
+            const response = await axios.post(`https://oneheart.team.com/api/${endpoint}`, formData, {
               headers: { 'Content-Type': 'multipart/form-data' }
             });
             console.log("Create response:", response.data);
           } else {
             console.log("Updating about us entry");
             const response = await axios.put(
-              `http://localhost:3500/api/${endpoint}/${selectedItem._id}`,
+              `https://oneheart.team.com/api/${endpoint}/${selectedItem._id}`,
               formData,
               {
                 headers: { 'Content-Type': 'multipart/form-data' }
@@ -374,8 +374,8 @@ const SettingsComponents = () => {
         
         // For about-us, we don't need the ID as there's only one entry
         const url = activeTab === "about" 
-          ? `http://localhost:3500/api/${endpoint}`
-          : `http://localhost:3500/api/${endpoint}/${id}`;
+          ? `https://oneheart.team.com/api/${endpoint}`
+          : `https://oneheart.team.com/api/${endpoint}/${id}`;
         
         console.log("Deleting item at URL:", url);
         await axios.delete(url);
@@ -397,7 +397,7 @@ const SettingsComponents = () => {
       <div className="mb-2">
         <p className="mb-1">Current Image:</p>
         <img 
-          src={`http://localhost:3500/uploads/aboutUs/${section.photo}`} 
+          src={`https://oneheart.team.com/uploads/aboutUs/${section.photo}`} 
           alt={`${sectionName} Image`}
           style={{ width: '100px', height: '100px', objectFit: 'cover' }}
           className="border"
@@ -417,7 +417,7 @@ const SettingsComponents = () => {
           {selectedItem.aboutUs.photos.map((photo, index) => (
             <img 
               key={index}
-              src={`http://localhost:3500/uploads/aboutUs/${photo}`} 
+              src={`https://oneheart.team.com/uploads/aboutUs/${photo}`} 
               alt={`About Us Photo ${index + 1}`}
               style={{ width: '100px', height: '100px', objectFit: 'cover' }}
               className="border"
@@ -1137,7 +1137,7 @@ const SettingsComponents = () => {
                   <tr key={item._id}>
                     <td>
                       <img
-                        src={`http://localhost:3500/uploads/${
+                        src={`https://oneheart.team.com/uploads/${
                           activeTab === "sliders" ? "sliderImages" : "counterImages"
                         }/${
                           activeTab === "sliders"
@@ -1203,7 +1203,7 @@ const SettingsComponents = () => {
                     <tr key={item._id}>
                       <td style={{ width: "100px" }}>
                         <img
-                          src={`http://localhost:3500/uploads/programs/${item.image}`}
+                          src={`https://oneheart.team.com/uploads/programs/${item.image}`}
                           alt={item.titleAr}
                           className="img-fluid"
                           style={{ maxWidth: "100px", height: "60px", objectFit: "cover" }}
@@ -1284,7 +1284,7 @@ const SettingsComponents = () => {
                           {viewItem.aboutUs.photos.map((photo, index) => (
                             <div key={index} className="me-2 mb-2">
                               <img
-                                src={`http://localhost:3500/uploads/aboutUs/${photo}`}
+                                src={`https://oneheart.team.com/uploads/aboutUs/${photo}`}
                                 alt={`صورة ${index + 1}`}
                                 style={{ width: "100px", height: "100px", objectFit: "cover" }}
                               />
@@ -1303,7 +1303,7 @@ const SettingsComponents = () => {
                       <div className="mt-3">
                         <h6 className="mb-2">الصورة</h6>
                         <img
-                          src={`http://localhost:3500/uploads/aboutUs/${viewItem.goal.photo}`}
+                          src={`https://oneheart.team.com/uploads/aboutUs/${viewItem.goal.photo}`}
                           alt="صورة الهدف"
                           style={{ maxWidth: "200px", maxHeight: "200px", objectFit: "contain" }}
                         />
@@ -1319,7 +1319,7 @@ const SettingsComponents = () => {
                       <div className="mt-3">
                         <h6 className="mb-2">الصورة</h6>
                         <img
-                          src={`http://localhost:3500/uploads/aboutUs/${viewItem.vision.photo}`}
+                          src={`https://oneheart.team.com/uploads/aboutUs/${viewItem.vision.photo}`}
                           alt="صورة الرؤية"
                           style={{ maxWidth: "200px", maxHeight: "200px", objectFit: "contain" }}
                         />
@@ -1335,7 +1335,7 @@ const SettingsComponents = () => {
                       <div className="mt-3">
                         <h6 className="mb-2">الصورة</h6>
                         <img
-                          src={`http://localhost:3500/uploads/aboutUs/${viewItem.message.photo}`}
+                          src={`https://oneheart.team.com/uploads/aboutUs/${viewItem.message.photo}`}
                           alt="صورة الرسالة"
                           style={{ maxWidth: "200px", maxHeight: "200px", objectFit: "contain" }}
                         />
@@ -1351,7 +1351,7 @@ const SettingsComponents = () => {
                       <div className="mt-3">
                         <h6 className="mb-2">الصورة</h6>
                         <img
-                          src={`http://localhost:3500/uploads/aboutUs/${viewItem.values.photo}`}
+                          src={`https://oneheart.team.com/uploads/aboutUs/${viewItem.values.photo}`}
                           alt="صورة القيم"
                           style={{ maxWidth: "200px", maxHeight: "200px", objectFit: "contain" }}
                         />
@@ -1372,7 +1372,7 @@ const SettingsComponents = () => {
                           {viewItem.aboutUs.photos.map((photo, index) => (
                             <div key={index} className="me-2 mb-2">
                               <img
-                                src={`http://localhost:3500/uploads/aboutUs/${photo}`}
+                                src={`https://oneheart.team.com/uploads/aboutUs/${photo}`}
                                 alt={`Photo ${index + 1}`}
                                 style={{ width: "100px", height: "100px", objectFit: "cover" }}
                               />
@@ -1391,7 +1391,7 @@ const SettingsComponents = () => {
                       <div className="mt-3">
                         <h6 className="mb-2">Photo</h6>
                         <img
-                          src={`http://localhost:3500/uploads/aboutUs/${viewItem.goal.photo}`}
+                          src={`https://oneheart.team.com/uploads/aboutUs/${viewItem.goal.photo}`}
                           alt="Goal photo"
                           style={{ maxWidth: "200px", maxHeight: "200px", objectFit: "contain" }}
                         />
@@ -1407,7 +1407,7 @@ const SettingsComponents = () => {
                       <div className="mt-3">
                         <h6 className="mb-2">Photo</h6>
                         <img
-                          src={`http://localhost:3500/uploads/aboutUs/${viewItem.vision.photo}`}
+                          src={`https://oneheart.team.com/uploads/aboutUs/${viewItem.vision.photo}`}
                           alt="Vision photo"
                           style={{ maxWidth: "200px", maxHeight: "200px", objectFit: "contain" }}
                         />
@@ -1423,7 +1423,7 @@ const SettingsComponents = () => {
                       <div className="mt-3">
                         <h6 className="mb-2">Photo</h6>
                         <img
-                          src={`http://localhost:3500/uploads/aboutUs/${viewItem.message.photo}`}
+                          src={`https://oneheart.team.com/uploads/aboutUs/${viewItem.message.photo}`}
                           alt="Message photo"
                           style={{ maxWidth: "200px", maxHeight: "200px", objectFit: "contain" }}
                         />
@@ -1439,7 +1439,7 @@ const SettingsComponents = () => {
                       <div className="mt-3">
                         <h6 className="mb-2">Photo</h6>
                         <img
-                          src={`http://localhost:3500/uploads/aboutUs/${viewItem.values.photo}`}
+                          src={`https://oneheart.team.com/uploads/aboutUs/${viewItem.values.photo}`}
                           alt="Values photo"
                           style={{ maxWidth: "200px", maxHeight: "200px", objectFit: "contain" }}
                         />
@@ -1453,7 +1453,7 @@ const SettingsComponents = () => {
             <div>
               <div className="text-center mb-4">
                 <img
-                  src={`http://localhost:3500/uploads/programs/${viewItem.image}`}
+                  src={`https://oneheart.team.com/uploads/programs/${viewItem.image}`}
                   alt={viewItem.titleAr}
                   style={{ maxWidth: "100%", maxHeight: "300px", objectFit: "contain" }}
                 />
