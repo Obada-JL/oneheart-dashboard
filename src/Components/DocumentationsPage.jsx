@@ -17,7 +17,7 @@ export default function DocumentationsPage() {
     setLoading(true);
     try {
       const response = await axios.get(
-        "https://oneheart.team.com/api/documentations"
+        "https://oneheart.team/api/documentations"
       );
       setDocumentations(response.data);
     } catch (error) {
@@ -136,7 +136,7 @@ export default function DocumentationsPage() {
       try {
         if (modalMode === "add") {
           console.log("Creating new documentation");
-          const response = await axios.post("https://oneheart.team.com/api/documentations", formData, {
+          const response = await axios.post("https://oneheart.team/api/documentations", formData, {
             headers: {
               'Content-Type': 'multipart/form-data'
             }
@@ -150,7 +150,7 @@ export default function DocumentationsPage() {
         } else {
           console.log(`Updating documentation ${selectedDoc._id}`);
           const response = await axios.put(
-            `https://oneheart.team.com/api/documentations/${selectedDoc._id}`,
+            `https://oneheart.team/api/documentations/${selectedDoc._id}`,
             formData,
             {
               headers: {
@@ -208,7 +208,7 @@ export default function DocumentationsPage() {
 
     if (result.isConfirmed) {
       try {
-        await axios.delete(`https://oneheart.team.com/api/documentations/${id}`);
+        await axios.delete(`https://oneheart.team/api/documentations/${id}`);
         Swal.fire("تم الحذف!", "تم حذف التوثيق بنجاح.", "success");
         fetchDocumentations();
       } catch (error) {
@@ -257,7 +257,7 @@ export default function DocumentationsPage() {
                     {doc.images && doc.images.map((img, index) => (
                       <img
                         key={index}
-                        src={`https://oneheart.team.com/uploads/documentations/${img}`}
+                        src={`https://oneheart.team/uploads/documentations/${img}`}
                         alt={`توثيق ${index + 1}`}
                         style={{
                           width: "50px",
@@ -325,7 +325,7 @@ export default function DocumentationsPage() {
                     {selectedDoc.images.map((img, index) => (
                       <img
                         key={index}
-                        src={`https://oneheart.team.com/uploads/documentations/${img}`}
+                        src={`https://oneheart.team/uploads/documentations/${img}`}
                         alt={`توثيق ${index + 1}`}
                         style={{
                           width: "80px",

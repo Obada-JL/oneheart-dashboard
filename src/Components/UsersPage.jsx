@@ -14,7 +14,7 @@ const UsersPage = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const response = await axios.get("https://oneheart.team.com/api/users", {
+      const response = await axios.get("https://oneheart.team/api/users", {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
@@ -75,7 +75,7 @@ const UsersPage = () => {
       if (modalMode === "add") {
         // Create new user
         await axios.post(
-          "https://oneheart.team.com/api/users",
+          "https://oneheart.team/api/users",
           selectedUser,
           {
             headers: {
@@ -96,7 +96,7 @@ const UsersPage = () => {
         }
         
         await axios.put(
-          `https://oneheart.team.com/api/users/${selectedUser._id}`,
+          `https://oneheart.team/api/users/${selectedUser._id}`,
           userData,
           {
             headers: {
@@ -139,7 +139,7 @@ const UsersPage = () => {
       if (result.isConfirmed) {
         setLoading(true);
         try {
-          await axios.delete(`https://oneheart.team.com/api/users/${id}`, {
+          await axios.delete(`https://oneheart.team/api/users/${id}`, {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
             },

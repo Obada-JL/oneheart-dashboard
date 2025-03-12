@@ -20,7 +20,7 @@ export default function SupportCampaigns() {
     setLoading(true);
     try {
       const response = await axios.get(
-        "https://oneheart.team.com/api/support-campaigns"
+        "https://oneheart.team/api/support-campaigns"
       );
       setCampaigns(response.data);
     } catch (error) {
@@ -264,8 +264,8 @@ export default function SupportCampaigns() {
       }
 
       const url = modalMode === "add"
-          ? "https://oneheart.team.com/api/support-campaigns"
-          : `https://oneheart.team.com/api/support-campaigns/${selectedCampaign._id}`;
+          ? "https://oneheart.team/api/support-campaigns"
+          : `https://oneheart.team/api/support-campaigns/${selectedCampaign._id}`;
 
       console.log("Sending request to:", url);
       console.log("Request method:", modalMode === "add" ? "post" : "put");
@@ -317,7 +317,7 @@ export default function SupportCampaigns() {
       });
 
       if (result.isConfirmed) {
-        await axios.delete(`https://oneheart.team.com/api/support-campaigns/${id}`);
+        await axios.delete(`https://oneheart.team/api/support-campaigns/${id}`);
         
         await Swal.fire({
           title: 'تم الحذف!',
@@ -381,7 +381,7 @@ export default function SupportCampaigns() {
                 <tr key={campaign._id}>
                   <td>
                     <img
-                      src={`https://oneheart.team.com/uploads/support-campaigns/${campaign.image}`}
+                      src={`https://oneheart.team/uploads/support-campaigns/${campaign.image}`}
                       alt={campaign.title}
                       style={{ width: "100px", height: "60px", objectFit: "cover" }}
                     />
@@ -686,7 +686,7 @@ export default function SupportCampaigns() {
             <div className="view-campaign-details">
               <div className="text-center mb-4">
                 <img
-                  src={`https://oneheart.team.com/uploads/support-campaigns/${viewCampaign.image}`}
+                  src={`https://oneheart.team/uploads/support-campaigns/${viewCampaign.image}`}
                   alt={viewCampaign.title}
                   className="img-fluid"
                   style={{ maxHeight: "300px", objectFit: "contain" }}
@@ -717,7 +717,7 @@ export default function SupportCampaigns() {
                   {viewCampaign.details.image && (
                     <div className="text-center mb-3">
                       <img
-                        src={`https://oneheart.team.com/uploads/support-campaigns/${viewCampaign.details.image}`}
+                        src={`https://oneheart.team/uploads/support-campaigns/${viewCampaign.details.image}`}
                         alt="Details"
                         className="img-fluid"
                         style={{ maxHeight: "200px", objectFit: "contain" }}

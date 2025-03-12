@@ -17,7 +17,7 @@ export default function SponsorshipsPage() {
     setLoading(true);
     try {
       const response = await axios.get(
-        "https://oneheart.team.com/api/sponsorships"
+        "https://oneheart.team/api/sponsorships"
       );
       setSponsorships(response.data);
     } catch (error) {
@@ -241,7 +241,7 @@ export default function SponsorshipsPage() {
       let response;
       if (modalMode === "add") {
         console.log("Creating new sponsorship");
-        response = await axios.post("https://oneheart.team.com/api/sponsorships", formData);
+        response = await axios.post("https://oneheart.team/api/sponsorships", formData);
         console.log("Created sponsorship:", response.data);
         
         Swal.fire({
@@ -253,7 +253,7 @@ export default function SponsorshipsPage() {
       } else {
         console.log(`Updating sponsorship with ID: ${selectedSponsorship._id}`);
         response = await axios.put(
-          `https://oneheart.team.com/api/sponsorships/${selectedSponsorship._id}`,
+          `https://oneheart.team/api/sponsorships/${selectedSponsorship._id}`,
           formData
         );
         console.log("Updated sponsorship:", response.data);
@@ -298,7 +298,7 @@ export default function SponsorshipsPage() {
     if (result.isConfirmed) {
       try {
         setLoading(true);
-        await axios.delete(`https://oneheart.team.com/api/sponsorships/${id}`);
+        await axios.delete(`https://oneheart.team/api/sponsorships/${id}`);
         Swal.fire({
           icon: "success",
           title: "تم الحذف!",
@@ -352,7 +352,7 @@ export default function SponsorshipsPage() {
                 <tr key={sponsorship._id}>
                   <td>
                     <img
-                      src={`https://oneheart.team.com/uploads/sponsorships/${sponsorship.sponsorshipImage}`}
+                      src={`https://oneheart.team/uploads/sponsorships/${sponsorship.sponsorshipImage}`}
                       alt={sponsorship.title}
                       style={{
                         width: "50px",
@@ -422,7 +422,7 @@ export default function SponsorshipsPage() {
             {modalMode === "edit" && selectedSponsorship.sponsorshipImage && typeof selectedSponsorship.sponsorshipImage === 'string' && (
               <div className="mt-2">
                 <img
-                  src={`https://oneheart.team.com/uploads/sponsorships/${selectedSponsorship.sponsorshipImage}`}
+                  src={`https://oneheart.team/uploads/sponsorships/${selectedSponsorship.sponsorshipImage}`}
                   alt="Current main"
                   style={{ width: "100px", height: "60px", objectFit: "cover" }}
                 />
@@ -447,7 +447,7 @@ export default function SponsorshipsPage() {
             {modalMode === "edit" && selectedSponsorship.detailsImage && typeof selectedSponsorship.detailsImage === 'string' && (
               <div className="mt-2">
                 <img
-                  src={`https://oneheart.team.com/uploads/sponsorships/${selectedSponsorship.detailsImage}`}
+                  src={`https://oneheart.team/uploads/sponsorships/${selectedSponsorship.detailsImage}`}
                   alt="Current details"
                   style={{ width: "100px", height: "60px", objectFit: "cover" }}
                 />
@@ -733,7 +733,7 @@ export default function SponsorshipsPage() {
               <div className="text-center mb-4">
                 <h6 className="mb-2">الصورة الرئيسية</h6>
                 <img
-                  src={`https://oneheart.team.com/uploads/sponsorships/${viewSponsorship.sponsorshipImage}`}
+                  src={`https://oneheart.team/uploads/sponsorships/${viewSponsorship.sponsorshipImage}`}
                   alt={viewSponsorship.title}
                   className="img-fluid"
                   style={{ maxHeight: "300px", objectFit: "contain" }}
@@ -744,7 +744,7 @@ export default function SponsorshipsPage() {
                 <div className="text-center mb-4">
                   <h6 className="mb-2">صورة التفاصيل</h6>
                   <img
-                    src={`https://oneheart.team.com/uploads/sponsorships/${viewSponsorship.detailsImage}`}
+                    src={`https://oneheart.team/uploads/sponsorships/${viewSponsorship.detailsImage}`}
                     alt={`${viewSponsorship.title} details`}
                     className="img-fluid"
                     style={{ maxHeight: "300px", objectFit: "contain" }}

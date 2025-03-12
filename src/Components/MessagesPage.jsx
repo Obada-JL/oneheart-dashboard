@@ -10,7 +10,7 @@ export default function MessagesPage() {
   const fetchMessages = async () => {
     setLoading(true);
     try {
-      const response = await axios.get("https://oneheart.team.com/api/messages");
+      const response = await axios.get("https://oneheart.team/api/messages");
       setMessages(response.data);
     } catch (error) {
       console.error("Error fetching messages:", error);
@@ -43,7 +43,7 @@ export default function MessagesPage() {
 
     if (result.isConfirmed) {
       try {
-        await axios.delete(`https://oneheart.team.com/api/messages/${id}`);
+        await axios.delete(`https://oneheart.team/api/messages/${id}`);
         Swal.fire({
           icon: "success",
           title: "تم الحذف!",
@@ -65,7 +65,7 @@ export default function MessagesPage() {
 
   const handleMarkAsRead = async (id, isRead) => {
     try {
-      await axios.put(`https://oneheart.team.com/api/messages/${id}`, {
+      await axios.put(`https://oneheart.team/api/messages/${id}`, {
         isRead: !isRead,
       });
 

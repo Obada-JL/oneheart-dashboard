@@ -18,7 +18,7 @@ export default function CurrentProjects() {
     setLoading(true);
     try {
       const response = await axios.get(
-        "https://oneheart.team.com/api/current-projects"
+        "https://oneheart.team/api/current-projects"
       );
       setProjects(response.data);
     } catch (error) {
@@ -156,8 +156,8 @@ export default function CurrentProjects() {
 
       const url =
         modalMode === "add"
-          ? "https://oneheart.team.com/api/current-projects"
-          : `https://oneheart.team.com/api/current-projects/${selectedProject._id}`;
+          ? "https://oneheart.team/api/current-projects"
+          : `https://oneheart.team/api/current-projects/${selectedProject._id}`;
 
       const method = modalMode === "add" ? "post" : "put";
 
@@ -202,7 +202,7 @@ export default function CurrentProjects() {
     if (result.isConfirmed) {
       setLoading(true);
       try {
-        await axios.delete(`https://oneheart.team.com/api/current-projects/${id}`);
+        await axios.delete(`https://oneheart.team/api/current-projects/${id}`);
         await Swal.fire({
           title: 'تم الحذف!',
           text: 'تم حذف المشروع بنجاح.',
@@ -265,7 +265,7 @@ export default function CurrentProjects() {
                 <tr key={project._id}>
                   <td>
                     <img
-                      src={`https://oneheart.team.com/uploads/current-projects/${project.image}`}
+                      src={`https://oneheart.team/uploads/current-projects/${project.image}`}
                       alt={project.title}
                       style={{
                         width: "50px",
@@ -582,7 +582,7 @@ export default function CurrentProjects() {
             <div className="view-project-details">
               <div className="text-center mb-4">
                 <img
-                  src={`https://oneheart.team.com/uploads/current-projects/${viewProject.image}`}
+                  src={`https://oneheart.team/uploads/current-projects/${viewProject.image}`}
                   alt={viewProject.title}
                   className="img-fluid"
                   style={{ maxHeight: "300px", objectFit: "contain" }}

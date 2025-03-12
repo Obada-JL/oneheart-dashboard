@@ -20,7 +20,7 @@ export default function CurrentCampaigns() {
     setLoading(true);
     try {
       const response = await axios.get(
-        "https://oneheart.team.com/api/current-campaigns"
+        "https://oneheart.team/api/current-campaigns"
       );
       setCampaigns(response.data);
     } catch (error) {
@@ -277,8 +277,8 @@ export default function CurrentCampaigns() {
       }
 
       const url = modalMode === "add"
-          ? "https://oneheart.team.com/api/current-campaigns"
-          : `https://oneheart.team.com/api/current-campaigns/${selectedCampaign._id}`;
+          ? "https://oneheart.team/api/current-campaigns"
+          : `https://oneheart.team/api/current-campaigns/${selectedCampaign._id}`;
 
       console.log("Sending request to:", url);
       console.log("Request method:", modalMode === "add" ? "post" : "put");
@@ -330,7 +330,7 @@ export default function CurrentCampaigns() {
       });
 
       if (result.isConfirmed) {
-        await axios.delete(`https://oneheart.team.com/api/current-campaigns/${id}`);
+        await axios.delete(`https://oneheart.team/api/current-campaigns/${id}`);
         
         await Swal.fire({
           title: 'تم الحذف!',
@@ -393,7 +393,7 @@ export default function CurrentCampaigns() {
                 <tr key={campaign._id}>
                   <td>
                     <img
-                      src={`https://oneheart.team.com/uploads/current-campaigns/${campaign.image}`}
+                      src={`https://oneheart.team/uploads/current-campaigns/${campaign.image}`}
                       alt={campaign.title}
                       style={{ width: "50px", height: "50px", objectFit: "cover" }}
                     />
@@ -686,7 +686,7 @@ export default function CurrentCampaigns() {
             <div className="view-campaign-details">
               <div className="text-center mb-4">
                 <img
-                  src={`https://oneheart.team.com/uploads/current-campaigns/${viewCampaign.image}`}
+                  src={`https://oneheart.team/uploads/current-campaigns/${viewCampaign.image}`}
                   alt={viewCampaign.title}
                   className="img-fluid"
                   style={{ maxHeight: "300px", objectFit: "contain" }}
@@ -711,7 +711,7 @@ export default function CurrentCampaigns() {
                   {viewCampaign.details.image && (
                     <div className="text-center mb-3">
                       <img
-                        src={`https://oneheart.team.com/uploads/current-campaigns/${viewCampaign.details.image}`}
+                        src={`https://oneheart.team/uploads/current-campaigns/${viewCampaign.details.image}`}
                         alt="Details"
                         className="img-fluid"
                         style={{ maxHeight: "200px", objectFit: "contain" }}
