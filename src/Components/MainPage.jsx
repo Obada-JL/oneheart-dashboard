@@ -1,4 +1,6 @@
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import { Link } from "react-router-dom";
+
 export default function MainPage() {
   return (
     <>

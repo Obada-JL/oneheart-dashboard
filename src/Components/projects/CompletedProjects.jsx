@@ -45,8 +45,6 @@ export default function CompletedProjects() {
         BeneficiaryAr: project.details[0].BeneficiaryAr || "",
         title: project.title || "",
         titleAr: project.titleAr || "",
-        description: project.description || "",
-        descriptionAr: project.descriptionAr || "",
         category: project.category || "",
         categoryAr: project.categoryAr || ""
       });
@@ -55,8 +53,6 @@ export default function CompletedProjects() {
       setSelectedProject({
         title: "",
         titleAr: "",
-        description: "",
-        descriptionAr: "",
         category: "",
         categoryAr: "",
         fund: "",
@@ -79,8 +75,6 @@ export default function CompletedProjects() {
     setSelectedProject({
       title: "",
       titleAr: "",
-      description: "",
-      descriptionAr: "",
       category: "",
       categoryAr: "",
       fund: "",
@@ -104,8 +98,6 @@ export default function CompletedProjects() {
       const requiredFields = {
         title: "العنوان بالإنجليزية",
         titleAr: "العنوان بالعربية",
-        description: "الوصف بالإنجليزية",
-        descriptionAr: "الوصف بالعربية",
         category: "التصنيف بالإنجليزية",
         categoryAr: "التصنيف بالعربية",
         fund: "التمويل بالإنجليزية",
@@ -143,8 +135,6 @@ export default function CompletedProjects() {
       // Append main fields (title and category)
       formData.append('title', selectedProject.title);
       formData.append('titleAr', selectedProject.titleAr);
-      formData.append('description', selectedProject.description);
-      formData.append('descriptionAr', selectedProject.descriptionAr);
       formData.append('category', selectedProject.category);
       formData.append('categoryAr', selectedProject.categoryAr);
 
@@ -282,7 +272,6 @@ export default function CompletedProjects() {
                 <th>الصورة</th>
                 <th>العنوان</th>
                 <th>التصنيف</th>
-                <th>الوصف</th>
                 <th>التفاصيل</th>
                 <th>الإجراءات</th>
               </tr>
@@ -309,10 +298,6 @@ export default function CompletedProjects() {
                   <td>
                     <div className="mb-1">{project.categoryAr}</div>
                     <small className="text-muted">{project.category}</small>
-                  </td>
-                  <td>
-                    <div className="mb-1">{project.descriptionAr?.substring(0, 50)}...</div>
-                    <small className="text-muted">{project.description?.substring(0, 50)}...</small>
                   </td>
                   <td>
                     <div className="small">
@@ -418,21 +403,6 @@ export default function CompletedProjects() {
                   />
                 </Form.Group>
 
-                <Form.Group className="mb-3">
-                  <Form.Label className="fw-bold">الوصف</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={4}
-                    value={selectedProject.descriptionAr || ""}
-                    onChange={(e) =>
-                      setSelectedProject({
-                        ...selectedProject,
-                        descriptionAr: e.target.value,
-                      })
-                    }
-                  />
-                </Form.Group>
-
                 {/* Arabic Details */}
                 <div className="border rounded p-3 mb-3">
                   <h6 className="mb-3">تفاصيل إضافية</h6>
@@ -518,21 +488,6 @@ export default function CompletedProjects() {
                       setSelectedProject({
                         ...selectedProject,
                         category: e.target.value,
-                      })
-                    }
-                  />
-                </Form.Group>
-
-                <Form.Group className="mb-3">
-                  <Form.Label className="fw-bold">Description</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={4}
-                    value={selectedProject.description || ""}
-                    onChange={(e) =>
-                      setSelectedProject({
-                        ...selectedProject,
-                        description: e.target.value,
                       })
                     }
                   />
@@ -640,12 +595,6 @@ export default function CompletedProjects() {
                 <h5 className="border-bottom pb-2">التصنيف</h5>
                 <p className="text-muted mb-1">بالعربية: {viewProject.categoryAr}</p>
                 <p>بالإنجليزية: {viewProject.category}</p>
-              </div>
-
-              <div className="mb-4">
-                <h5 className="border-bottom pb-2">الوصف</h5>
-                <p className="text-muted mb-1">بالعربية: {viewProject.descriptionAr}</p>
-                <p>بالإنجليزية: {viewProject.description}</p>
               </div>
 
               <div className="mb-4">

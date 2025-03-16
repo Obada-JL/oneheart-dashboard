@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Modal, Button, Table, Spinner, Form, Tabs, Tab } from "react-bootstrap";
 import Swal from "sweetalert2";
+import CampaignVideos from "./CampaignVideos";
 
 const SettingsComponents = () => {
   const [activeTab, setActiveTab] = useState("sliders");
@@ -1034,55 +1035,17 @@ const SettingsComponents = () => {
     }
   };
 
-  return (
-    <div className="p-4 bg-light" dir="rtl">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <div className="btn-group" dir="rtl">
-          <Button
-            variant={activeTab === "sliders" ? "primary" : "outline-primary"}
-            onClick={() => setActiveTab("sliders")}
-            className="me-2"
-          >
-            السلايدر
-          </Button>
-          <Button
-            variant={activeTab === "counter" ? "primary" : "outline-primary"}
-            onClick={() => setActiveTab("counter")}
-            className="me-2"
-          >
-            العدادات
-          </Button>
-          <Button
-            variant={activeTab === "programs" ? "primary" : "outline-primary"}
-            onClick={() => setActiveTab("programs")}
-          >
-            البرامج
-          </Button>
-          <Button
-            variant={activeTab === "about" ? "primary" : "outline-primary"}
-            onClick={() => setActiveTab("about")}
-          >
-            قسم عن الفريق
-          </Button>
-        </div>
-        <Button variant="primary" onClick={() => handleShowModal({}, "add")}>
-          إضافة {activeTab === "sliders" ? "سلايد" : activeTab === "counters" ? "عداد" : activeTab === "programs" ? "برنامج" : "قسم"} جديد
-        </Button>
-      </div>
-
-      {loading ? (
-        <div className="text-center my-5">
-          <Spinner animation="border" variant="primary" />
-        </div>
-      ) : (
-        <>
-          {activeTab === "about" ? (
-            // About section table
+  // About Us Component
+  const AboutUsComponent = () => {
+    return (
+      <div className="mt-4">
+        {items.length > 0 ? (
+          <div className="table-responsive">
             <Table hover className="align-middle">
               <thead>
                 <tr>
-                  <th>الوصف (بالعربية)</th>
-                  <th>Description (English)</th>
+                  <th>من نحن (بالعربية)</th>
+                  <th>About Us (English)</th>
                   <th>الإجراءات</th>
                 </tr>
               </thead>
@@ -1120,106 +1083,119 @@ const SettingsComponents = () => {
                 ))}
               </tbody>
             </Table>
-          ) : (
-            // Sliders and Counters table
-            <Table hover className="align-middle">
-              <thead>
-                <tr>
-                  <th>الصورة</th>
-                  <th>العنوان (بالعربية)</th>
-                  <th>Title (English)</th>
-                  {activeTab === "counter" && <th>العدد</th>}
-                  <th>الإجراءات</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item) => (
-                  <tr key={item._id}>
-                    <td>
-                      <img
-                        src={`https://oneheart.team/uploads/${
-                          activeTab === "sliders" ? "sliderImages" : "counterImages"
-                        }/${
-                          activeTab === "sliders"
-                            ? item.sliderImage
-                            : item.counterImage
-                        }`}
-                        alt=""
-                        style={{
-                          width: "50px",
-                          height: "50px",
-                          objectFit: "cover",
-                        }}
-                      />
-                    </td>
-                    <td>
-                      {activeTab === "sliders"
-                        ? item.sliderTitleAr
-                        : item.counterTitleAr}
-                    </td>
-                    <td>
-                      {activeTab === "sliders"
-                        ? item.sliderTitle
-                        : item.counterTitleEn}
-                    </td>
-                    {activeTab === "counter" && <td>{item.counterNumber}</td>}
-                    <td>
-                      <div className="d-flex gap-2">
-                        <Button
-                          variant="outline-primary"
-                          size="sm"
-                          onClick={() => handleShowModal(item, "edit")}
-                        >
-                          تعديل
-                        </Button>
-                        <Button
-                          variant="outline-danger"
-                          size="sm"
-                          onClick={() => handleDeleteItem(item._id)}
-                        >
-                          حذف
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-          )}
+          </div>
+        ) : (
+          <div className="text-center py-5">
+            <p>لم يتم العثور على بيانات. يرجى إضافة محتوى قسم من نحن.</p>
+            <Button 
+              variant="primary" 
+              onClick={() => handleShowModal({}, "add")}
+            >
+              إضافة محتوى من نحن
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  };
 
-          {activeTab === "programs" && (
-            <div className="table-responsive">
+  return (
+    <div className="p-4 bg-light" dir="rtl">
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <div className="btn-group" dir="rtl">
+          <Button
+            variant={activeTab === "sliders" ? "primary" : "outline-primary"}
+            onClick={() => setActiveTab("sliders")}
+            className="me-2"
+          >
+            السلايدر
+          </Button>
+          <Button
+            variant={activeTab === "counter" ? "primary" : "outline-primary"}
+            onClick={() => setActiveTab("counter")}
+            className="me-2"
+          >
+            العدادات
+          </Button>
+          <Button
+            variant={activeTab === "programs" ? "primary" : "outline-primary"}
+            onClick={() => setActiveTab("programs")}
+          >
+            البرامج
+          </Button>
+          <Button
+            variant={activeTab === "about" ? "primary" : "outline-primary"}
+            onClick={() => setActiveTab("about")}
+          >
+            من نحن
+          </Button>
+          <Button
+            variant={activeTab === "campaignVideos" ? "primary" : "outline-primary"}
+            onClick={() => setActiveTab("campaignVideos")}
+          >
+            فيديوهات الحملات
+          </Button>
+        </div>
+        <Button variant="primary" onClick={() => handleShowModal({}, "add")}>
+          إضافة {activeTab === "sliders" ? "سلايد" : activeTab === "counters" ? "عداد" : activeTab === "programs" ? "برنامج" : "قسم"} جديد
+        </Button>
+      </div>
+
+      {loading ? (
+        <div className="text-center my-5">
+          <Spinner animation="border" variant="primary" />
+        </div>
+      ) : (
+        <>
+          {activeTab === "about" ? (
+            <AboutUsComponent />
+          ) : activeTab === "campaignVideos" ? (
+            <CampaignVideos />
+          ) : (
+            <>
               <Table hover className="align-middle">
                 <thead>
                   <tr>
                     <th>الصورة</th>
-                    <th>العنوان بالعربية</th>
-                    <th>Title in English</th>
+                    <th>العنوان (بالعربية)</th>
+                    <th>Title (English)</th>
+                    {activeTab === "counter" && <th>العدد</th>}
                     <th>الإجراءات</th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((item) => (
                     <tr key={item._id}>
-                      <td style={{ width: "100px" }}>
+                      <td>
                         <img
-                          src={`https://oneheart.team/uploads/programs/${item.image}`}
-                          alt={item.titleAr}
-                          className="img-fluid"
-                          style={{ maxWidth: "100px", height: "60px", objectFit: "cover" }}
+                          src={`https://oneheart.team/uploads/${
+                            activeTab === "sliders" ? "sliderImages" : "counterImages"
+                          }/${
+                            activeTab === "sliders"
+                              ? item.sliderImage
+                              : item.counterImage
+                          }`}
+                          alt=""
+                          style={{
+                            width: "50px",
+                            height: "50px",
+                            objectFit: "cover",
+                          }}
                         />
                       </td>
-                      <td>{item.titleAr}</td>
-                      <td>{item.title}</td>
+                      <td>
+                        {activeTab === "sliders"
+                          ? item.sliderTitleAr
+                          : item.counterTitleAr}
+                      </td>
+                      <td>
+                        {activeTab === "sliders"
+                          ? item.sliderTitle
+                          : item.counterTitleEn}
+                      </td>
+                      {activeTab === "counter" && <td>{item.counterNumber}</td>}
                       <td>
                         <div className="d-flex gap-2">
-                          <Button
-                            variant="outline-info"
-                            size="sm"
-                            onClick={() => handleShowViewModal(item)}
-                          >
-                            عرض
-                          </Button>
                           <Button
                             variant="outline-primary"
                             size="sm"
@@ -1240,7 +1216,63 @@ const SettingsComponents = () => {
                   ))}
                 </tbody>
               </Table>
-            </div>
+
+              {activeTab === "programs" && (
+                <div className="table-responsive">
+                  <Table hover className="align-middle">
+                    <thead>
+                      <tr>
+                        <th>الصورة</th>
+                        <th>العنوان بالعربية</th>
+                        <th>Title in English</th>
+                        <th>الإجراءات</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {items.map((item) => (
+                        <tr key={item._id}>
+                          <td style={{ width: "100px" }}>
+                            <img
+                              src={`https://oneheart.team/uploads/programs/${item.image}`}
+                              alt={item.titleAr}
+                              className="img-fluid"
+                              style={{ maxWidth: "100px", height: "60px", objectFit: "cover" }}
+                            />
+                          </td>
+                          <td>{item.titleAr}</td>
+                          <td>{item.title}</td>
+                          <td>
+                            <div className="d-flex gap-2">
+                              <Button
+                                variant="outline-info"
+                                size="sm"
+                                onClick={() => handleShowViewModal(item)}
+                              >
+                                عرض
+                              </Button>
+                              <Button
+                                variant="outline-primary"
+                                size="sm"
+                                onClick={() => handleShowModal(item, "edit")}
+                              >
+                                تعديل
+                              </Button>
+                              <Button
+                                variant="outline-danger"
+                                size="sm"
+                                onClick={() => handleDeleteItem(item._id)}
+                              >
+                                حذف
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                </div>
+              )}
+            </>
           )}
         </>
       )}

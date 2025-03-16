@@ -23,7 +23,7 @@ export default function Login() {
       console.log("Attempting login with username:", username);
       
       const response = await axios.post(
-        "https://oneheart.team/api/auth/login",
+        "/api/auth/login",
         {
           username,
           password,

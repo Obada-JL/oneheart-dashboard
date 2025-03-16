@@ -52,8 +52,6 @@ export default function CompletedCampaigns() {
         _id: campaign._id,
         title: campaign.title || '',
         titleAr: campaign.titleAr || '',
-        description: campaign.description || '',
-        descriptionAr: campaign.descriptionAr || '',
         category: campaign.category || '',
         categoryAr: campaign.categoryAr || '',
         image: campaign.image || '',
@@ -70,8 +68,6 @@ export default function CompletedCampaigns() {
       setSelectedCampaign({
         title: '',
         titleAr: '',
-        description: '',
-        descriptionAr: '',
         category: '',
         categoryAr: '',
         image: '',
@@ -114,8 +110,7 @@ export default function CompletedCampaigns() {
     
     // Required fields validation
     const requiredFields = [
-      'title', 'titleAr', 'description', 'descriptionAr', 
-      'category', 'categoryAr', 'fund', 'fundAr', 
+      'title', 'titleAr', 'category', 'categoryAr', 'fund', 'fundAr', 
       'location', 'locationAr', 'duration', 'durationAr',
       'Beneficiary', 'BeneficiaryAr'
     ];
@@ -143,8 +138,7 @@ export default function CompletedCampaigns() {
   const validateForm = () => {
     const newErrors = {};
     const requiredFields = [
-      'title', 'titleAr', 'description', 'descriptionAr', 
-      'category', 'categoryAr', 'fund', 'fundAr', 
+      'title', 'titleAr', 'category', 'categoryAr', 'fund', 'fundAr', 
       'location', 'locationAr', 'duration', 'durationAr',
       'Beneficiary', 'BeneficiaryAr'
     ];
@@ -196,8 +190,6 @@ export default function CompletedCampaigns() {
       // Append main fields
       formData.append('title', selectedCampaign.title || '');
       formData.append('titleAr', selectedCampaign.titleAr || '');
-      formData.append('description', selectedCampaign.description || '');
-      formData.append('descriptionAr', selectedCampaign.descriptionAr || '');
       formData.append('category', selectedCampaign.category || '');
       formData.append('categoryAr', selectedCampaign.categoryAr || '');
 
@@ -441,20 +433,6 @@ export default function CompletedCampaigns() {
                 </Form.Group>
 
                 <Form.Group className="mb-3">
-                  <Form.Label className="fw-bold">الوصف</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={3}
-                    value={selectedCampaign.descriptionAr || ""}
-                    onChange={(e) => handleFieldChange('descriptionAr', e.target.value)}
-                    isInvalid={touched.descriptionAr && !!errors.descriptionAr}
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {errors.descriptionAr}
-                  </Form.Control.Feedback>
-                </Form.Group>
-
-                <Form.Group className="mb-3">
                   <Form.Label className="fw-bold">التصنيف</Form.Label>
                   <Form.Control
                     type="text"
@@ -535,20 +513,6 @@ export default function CompletedCampaigns() {
                   />
                   <Form.Control.Feedback type="invalid">
                     {errors.title}
-                  </Form.Control.Feedback>
-                </Form.Group>
-
-                <Form.Group className="mb-3">
-                  <Form.Label className="fw-bold">Description</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={3}
-                    value={selectedCampaign.description || ""}
-                    onChange={(e) => handleFieldChange('description', e.target.value)}
-                    isInvalid={touched.description && !!errors.description}
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {errors.description}
                   </Form.Control.Feedback>
                 </Form.Group>
 
@@ -673,12 +637,6 @@ export default function CompletedCampaigns() {
                 <h5 className="border-bottom pb-2">العنوان</h5>
                 <p className="text-muted mb-1">بالعربية: {viewCampaign.titleAr}</p>
                 <p>بالإنجليزية: {viewCampaign.title}</p>
-              </div>
-
-              <div className="mb-4">
-                <h5 className="border-bottom pb-2">الوصف</h5>
-                <p className="text-muted mb-1">بالعربية: {viewCampaign.descriptionAr}</p>
-                <p>بالإنجليزية: {viewCampaign.description}</p>
               </div>
 
               <div className="mb-4">
