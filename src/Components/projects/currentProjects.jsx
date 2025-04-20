@@ -18,7 +18,7 @@ export default function CurrentProjects() {
     setLoading(true);
     try {
       const response = await axios.get(
-        "https://oneheart.team/api/current-projects"
+        "http://localhost:3500/api/current-projects"
       );
       setProjects(response.data);
     } catch (error) {
@@ -34,34 +34,41 @@ export default function CurrentProjects() {
 
   const handleShowModal = (project = {}, mode = "add") => {
     if (mode === "edit") {
+      // Parse donation links if they exist
+      let parsedDonationLinks = [];
+      if (project.donationLinks) {
+        if (typeof project.donationLinks === 'string') {
+          try {
+            parsedDonationLinks = JSON.parse(project.donationLinks);
+          } catch (error) {
+            console.error("Error parsing donation links:", error);
+          }
+        } else if (Array.isArray(project.donationLinks)) {
+          parsedDonationLinks = project.donationLinks;
+        }
+      }
+
       setSelectedProject({
         ...project,
-        details: {
-          ...project.details,
-          title: project.details?.title || "",
-          titleAr: project.details?.titleAr || "",
-          description1: project.details?.description1 || "",
-          description1Ar: project.details?.description1Ar || "",
-          description2: project.details?.description2 || "",
-          description2Ar: project.details?.description2Ar || "",
-        },
+        title: project.title || "",
+        titleAr: project.titleAr || "",
         category: project.category || "",
         categoryAr: project.categoryAr || "",
         description: project.description || "",
         descriptionAr: project.descriptionAr || "",
+        donationLinks: parsedDonationLinks
       });
     } else {
-      // For add mode, initialize with empty details object
+      // For add mode, initialize with empty values
       setSelectedProject({
-        ...project,
-        details: {
-          title: "",
-          titleAr: "",
-          description1: "",
-          description1Ar: "",
-          description2: "",
-          description2Ar: "",
-        }
+        title: "",
+        titleAr: "",
+        description: "",
+        descriptionAr: "",
+        category: "",
+        categoryAr: "",
+        image: null,
+        donationLinks: []
       });
     }
     setModalMode(mode);
@@ -77,14 +84,44 @@ export default function CurrentProjects() {
       descriptionAr: "",
       category: "",
       categoryAr: "",
-      details: {
-        title: "",
-        titleAr: "",
-        description1: "",
-        description1Ar: "",
-        description2: "",
-        description2Ar: "",
-      }
+      image: null,
+      donationLinks: []
+    });
+  };
+
+  // Add new donation link
+  const addDonationLink = () => {
+    setSelectedProject({
+      ...selectedProject,
+      donationLinks: [
+        ...(selectedProject.donationLinks || []),
+        { methodName: "", link: "", icon: null }
+      ]
+    });
+  };
+
+  // Update donation link field
+  const updateDonationLink = (index, field, value) => {
+    const updatedLinks = [...(selectedProject.donationLinks || [])];
+    updatedLinks[index] = {
+      ...updatedLinks[index],
+      [field]: value
+    };
+
+    setSelectedProject({
+      ...selectedProject,
+      donationLinks: updatedLinks
+    });
+  };
+
+  // Remove donation link
+  const removeDonationLink = (index) => {
+    const updatedLinks = [...(selectedProject.donationLinks || [])];
+    updatedLinks.splice(index, 1);
+
+    setSelectedProject({
+      ...selectedProject,
+      donationLinks: updatedLinks
     });
   };
 
@@ -114,10 +151,6 @@ export default function CurrentProjects() {
         missingFields.push("الصورة الرئيسية");
       }
 
-      if (modalMode === "add" && (!selectedProject.details || !selectedProject.details.image)) {
-        missingFields.push("صورة التفاصيل");
-      }
-
       if (missingFields.length > 0) {
         await Swal.fire({
           title: 'حقول مطلوبة',
@@ -134,30 +167,51 @@ export default function CurrentProjects() {
         formData.append(field, selectedProject[field] || "");
       });
 
-      // Append images
+      // Append main image
       if (selectedProject.image instanceof File) {
         formData.append("image", selectedProject.image);
       }
-      if (selectedProject.details?.image instanceof File) {
-        formData.append("detailsImage", selectedProject.details.image);
+
+      // Append donation links
+      if (selectedProject.donationLinks && selectedProject.donationLinks.length > 0) {
+        // Filter out incomplete donation links
+        const validLinks = selectedProject.donationLinks.filter(
+          link => link.methodName && link.link
+        );
+
+        if (validLinks.length > 0) {
+          // Create a clean version of the links for JSON (without File objects)
+          const cleanLinks = validLinks.map((link, index) => {
+            // If the icon is a File object, we'll upload it separately
+            if (link.icon instanceof File) {
+              // Append the file to formData with a unique name
+              formData.append(`donationIcon_${index}`, link.icon);
+
+              // Return link without icon (backend will connect them)
+              return {
+                methodName: link.methodName,
+                link: link.link,
+                iconIndex: index // Add index to associate with the uploaded file
+              };
+            } else {
+              // Keep the existing icon string
+              return {
+                methodName: link.methodName,
+                link: link.link,
+                icon: link.icon
+              };
+            }
+          });
+
+          // Add the sanitized links to formData
+          formData.append("donationLinks", JSON.stringify(cleanLinks));
+        }
       }
-
-      // Create details object
-      const details = {
-        title: selectedProject.details?.title || "",
-        titleAr: selectedProject.details?.titleAr || "",
-        description1: selectedProject.details?.description1 || "",
-        description1Ar: selectedProject.details?.description1Ar || "",
-        description2: selectedProject.details?.description2 || "",
-        description2Ar: selectedProject.details?.description2Ar || "",
-      };
-
-      formData.append("details", JSON.stringify(details));
 
       const url =
         modalMode === "add"
-          ? "https://oneheart.team/api/current-projects"
-          : `https://oneheart.team/api/current-projects/${selectedProject._id}`;
+          ? "http://localhost:3500/api/current-projects"
+          : `http://localhost:3500/api/current-projects/${selectedProject._id}`;
 
       const method = modalMode === "add" ? "post" : "put";
 
@@ -202,7 +256,7 @@ export default function CurrentProjects() {
     if (result.isConfirmed) {
       setLoading(true);
       try {
-        await axios.delete(`https://oneheart.team/api/current-projects/${id}`);
+        await axios.delete(`http://localhost:3500/api/current-projects/${id}`);
         await Swal.fire({
           title: 'تم الحذف!',
           text: 'تم حذف المشروع بنجاح.',
@@ -257,26 +311,44 @@ export default function CurrentProjects() {
                 <th>العنوان</th>
                 <th>الوصف</th>
                 <th>التصنيف</th>
+                <th>روابط التبرع</th>
                 <th>الإجراءات</th>
               </tr>
             </thead>
             <tbody>
-              {projects.map((project) => (
+              {Array.isArray(projects) ? projects.map((project) => (
                 <tr key={project._id}>
                   <td>
                     <img
-                      src={`https://oneheart.team/uploads/current-projects/${project.image}`}
+                      src={`http://localhost:3500/uploads/current-projects/${project.image}`}
                       alt={project.title}
-                      style={{
-                        width: "50px",
-                        height: "50px",
-                        objectFit: "cover",
-                      }}
+                      style={{ width: "50px", height: "50px", objectFit: "cover" }}
                     />
                   </td>
                   <td>{project.title}</td>
-                  <td>{project.description && project.description.substring(0, 50)}...</td>
+                  <td>
+                    {project.description && project.description.length > 50
+                      ? `${project.description.substring(0, 50)}...`
+                      : project.description}
+                  </td>
                   <td>{project.category}</td>
+                  <td>
+                    {project.donationLinks ? (
+                      typeof project.donationLinks === 'string' ? (
+                        JSON.parse(project.donationLinks).length > 0 ? (
+                          <span className="badge bg-success">{JSON.parse(project.donationLinks).length} روابط</span>
+                        ) : (
+                          <span className="badge bg-secondary">لا توجد روابط</span>
+                        )
+                      ) : Array.isArray(project.donationLinks) && project.donationLinks.length > 0 ? (
+                        <span className="badge bg-success">{project.donationLinks.length} روابط</span>
+                      ) : (
+                        <span className="badge bg-secondary">لا توجد روابط</span>
+                      )
+                    ) : (
+                      <span className="badge bg-secondary">لا توجد روابط</span>
+                    )}
+                  </td>
                   <td>
                     <div className="d-flex gap-2">
                       <Button
@@ -303,7 +375,13 @@ export default function CurrentProjects() {
                     </div>
                   </td>
                 </tr>
-              ))}
+              )) : (
+                <tr>
+                  <td colSpan="6" className="text-center">
+                    No projects found.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </Table>
         </div>
@@ -328,22 +406,16 @@ export default function CurrentProjects() {
                   })
                 }
               />
-            </Form.Group>
-
-            <Form.Group className="mb-4">
-              <Form.Label className="fw-bold">صورة التفاصيل</Form.Label>
-              <Form.Control
-                type="file"
-                onChange={(e) =>
-                  setSelectedProject({
-                    ...selectedProject,
-                    details: {
-                      ...selectedProject.details,
-                      image: e.target.files[0],
-                    },
-                  })
-                }
-              />
+              {selectedProject.image && typeof selectedProject.image === "string" && (
+                <div className="mt-2">
+                  <img
+                    src={`http://localhost:3500/uploads/current-projects/${selectedProject.image}`}
+                    alt="Current main"
+                    style={{ height: "100px", objectFit: "contain" }}
+                  />
+                  <p className="text-muted small">الصورة الحالية</p>
+                </div>
+              )}
             </Form.Group>
 
             <Tabs
@@ -363,6 +435,7 @@ export default function CurrentProjects() {
                         titleAr: e.target.value,
                       })
                     }
+                    required
                   />
                 </Form.Group>
 
@@ -370,7 +443,7 @@ export default function CurrentProjects() {
                   <Form.Label className="fw-bold">الوصف</Form.Label>
                   <Form.Control
                     as="textarea"
-                    rows={3}
+                    rows={4}
                     value={selectedProject.descriptionAr || ""}
                     onChange={(e) =>
                       setSelectedProject({
@@ -378,6 +451,7 @@ export default function CurrentProjects() {
                         descriptionAr: e.target.value,
                       })
                     }
+                    required
                   />
                 </Form.Group>
 
@@ -392,65 +466,9 @@ export default function CurrentProjects() {
                         categoryAr: e.target.value,
                       })
                     }
+                    required
                   />
                 </Form.Group>
-
-                {/* Arabic Details */}
-                <div className="border rounded p-3 mb-3">
-                  <h6 className="mb-3">تفاصيل إضافية</h6>
-                  <Form.Group className="mb-3">
-                    <Form.Label>عنوان التفاصيل</Form.Label>
-                    <Form.Control
-                      type="text"
-                      value={selectedProject.details?.titleAr || ""}
-                      onChange={(e) =>
-                        setSelectedProject({
-                          ...selectedProject,
-                          details: {
-                            ...selectedProject.details,
-                            titleAr: e.target.value,
-                          },
-                        })
-                      }
-                    />
-                  </Form.Group>
-
-                  <Form.Group className="mb-3">
-                    <Form.Label>الوصف الأول</Form.Label>
-                    <Form.Control
-                      as="textarea"
-                      rows={3}
-                      value={selectedProject.details?.description1Ar || ""}
-                      onChange={(e) =>
-                        setSelectedProject({
-                          ...selectedProject,
-                          details: {
-                            ...selectedProject.details,
-                            description1Ar: e.target.value,
-                          },
-                        })
-                      }
-                    />
-                  </Form.Group>
-
-                  <Form.Group className="mb-3">
-                    <Form.Label>الوصف الثاني</Form.Label>
-                    <Form.Control
-                      as="textarea"
-                      rows={3}
-                      value={selectedProject.details?.description2Ar || ""}
-                      onChange={(e) =>
-                        setSelectedProject({
-                          ...selectedProject,
-                          details: {
-                            ...selectedProject.details,
-                            description2Ar: e.target.value,
-                          },
-                        })
-                      }
-                    />
-                  </Form.Group>
-                </div>
               </Tab>
 
               <Tab eventKey="en" title="English">
@@ -465,6 +483,7 @@ export default function CurrentProjects() {
                         title: e.target.value,
                       })
                     }
+                    required
                   />
                 </Form.Group>
 
@@ -472,7 +491,7 @@ export default function CurrentProjects() {
                   <Form.Label className="fw-bold">Description</Form.Label>
                   <Form.Control
                     as="textarea"
-                    rows={3}
+                    rows={4}
                     value={selectedProject.description || ""}
                     onChange={(e) =>
                       setSelectedProject({
@@ -480,6 +499,7 @@ export default function CurrentProjects() {
                         description: e.target.value,
                       })
                     }
+                    required
                   />
                 </Form.Group>
 
@@ -494,86 +514,119 @@ export default function CurrentProjects() {
                         category: e.target.value,
                       })
                     }
+                    required
                   />
                 </Form.Group>
-
-                {/* English Details */}
-                <div className="border rounded p-3 mb-3">
-                  <h6 className="mb-3">Additional Details</h6>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Details Title</Form.Label>
-                    <Form.Control
-                      type="text"
-                      value={selectedProject.details?.title || ""}
-                      onChange={(e) =>
-                        setSelectedProject({
-                          ...selectedProject,
-                          details: {
-                            ...selectedProject.details,
-                            title: e.target.value,
-                          },
-                        })
-                      }
-                    />
-                  </Form.Group>
-
-                  <Form.Group className="mb-3">
-                    <Form.Label>First Description</Form.Label>
-                    <Form.Control
-                      as="textarea"
-                      rows={3}
-                      value={selectedProject.details?.description1 || ""}
-                      onChange={(e) =>
-                        setSelectedProject({
-                          ...selectedProject,
-                          details: {
-                            ...selectedProject.details,
-                            description1: e.target.value,
-                          },
-                        })
-                      }
-                    />
-                  </Form.Group>
-
-                  <Form.Group className="mb-3">
-                    <Form.Label>Second Description</Form.Label>
-                    <Form.Control
-                      as="textarea"
-                      rows={3}
-                      value={selectedProject.details?.description2 || ""}
-                      onChange={(e) =>
-                        setSelectedProject({
-                          ...selectedProject,
-                          details: {
-                            ...selectedProject.details,
-                            description2: e.target.value,
-                          },
-                        })
-                      }
-                    />
-                  </Form.Group>
-                </div>
               </Tab>
             </Tabs>
+
+            {/* Donation Links Section */}
+            <div className="border rounded p-3 mt-4">
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <h5 className="mb-0">روابط التبرع / Donation Links</h5>
+                <Button
+                  variant="outline-primary"
+                  size="sm"
+                  onClick={addDonationLink}
+                >
+                  إضافة رابط جديد / Add New Link
+                </Button>
+              </div>
+
+              {selectedProject.donationLinks && selectedProject.donationLinks.length > 0 ? (
+                selectedProject.donationLinks.map((link, index) => (
+                  <div key={index} className="card mb-3 p-3">
+                    <div className="d-flex justify-content-end mb-2">
+                      <Button
+                        variant="outline-danger"
+                        size="sm"
+                        onClick={() => removeDonationLink(index)}
+                      >
+                        حذف / Remove
+                      </Button>
+                    </div>
+                    <div className="row g-3">
+                      <div className="col-md-4">
+                        <Form.Group>
+                          <Form.Label>أيقونة طريقة الدفع / Payment Method Icon</Form.Label>
+                          <Form.Control
+                            type="file"
+                            onChange={(e) => {
+                              if (e.target.files[0]) {
+                                updateDonationLink(index, "icon", e.target.files[0]);
+                              }
+                            }}
+                          />
+                          {link.icon && typeof link.icon === "string" && (
+                            <div className="mt-2">
+                              <img
+                                src={`http://localhost:3500/uploads/payment-icons/${link.icon}`}
+                                alt="Payment icon"
+                                style={{ height: "30px", objectFit: "contain" }}
+                              />
+                            </div>
+                          )}
+                        </Form.Group>
+                      </div>
+                      <div className="col-md-4">
+                        <Form.Group>
+                          <Form.Label>اسم طريقة الدفع / Method Name</Form.Label>
+                          <Form.Control
+                            type="text"
+                            value={link.methodName || ""}
+                            onChange={(e) => updateDonationLink(index, "methodName", e.target.value)}
+                            placeholder="e.g., PayPal, Bank Transfer"
+                            required
+                          />
+                        </Form.Group>
+                      </div>
+                      <div className="col-md-4">
+                        <Form.Group>
+                          <Form.Label>رابط الدفع / Payment Link</Form.Label>
+                          <Form.Control
+                            type="text"
+                            value={link.link || ""}
+                            onChange={(e) => updateDonationLink(index, "link", e.target.value)}
+                            placeholder="https://..."
+                            required
+                          />
+                        </Form.Group>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-3 text-muted">
+                  لا توجد روابط للتبرع. انقر على "إضافة رابط جديد" لإضافة طرق الدفع.
+                  <br />
+                  No donation links. Click "Add New Link" to add payment methods.
+                </div>
+              )}
+            </div>
           </Form>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={handleCloseModal}>
             إغلاق
           </Button>
-          <Button variant="primary" onClick={handleSaveProject}>
-            {modalMode === "add" ? "إضافة" : "حفظ التغييرات"}
+          <Button
+            variant="primary"
+            onClick={handleSaveProject}
+            disabled={loading}
+          >
+            {loading ? (
+              <Spinner animation="border" size="sm" />
+            ) : modalMode === "add" ? (
+              "إضافة"
+            ) : (
+              "حفظ التغييرات"
+            )}
           </Button>
         </Modal.Footer>
       </Modal>
 
       {/* View Modal */}
-      <Modal
-        show={showViewModal}
-        onHide={handleCloseViewModal}
-        size="lg"
-        dir="rtl"
-      >
+      <Modal show={showViewModal} onHide={handleCloseViewModal} size="lg" dir="rtl">
         <Modal.Header closeButton>
           <Modal.Title>تفاصيل المشروع</Modal.Title>
         </Modal.Header>
@@ -582,7 +635,7 @@ export default function CurrentProjects() {
             <div className="view-project-details">
               <div className="text-center mb-4">
                 <img
-                  src={`https://oneheart.team/uploads/current-projects/${viewProject.image}`}
+                  src={`http://localhost:3500/uploads/current-projects/${viewProject.image}`}
                   alt={viewProject.title}
                   className="img-fluid"
                   style={{ maxHeight: "300px", objectFit: "contain" }}
@@ -607,26 +660,33 @@ export default function CurrentProjects() {
                 <p>بالإنجليزية: {viewProject.category}</p>
               </div>
 
-              <div className="mb-4">
-                <h5 className="border-bottom pb-2">تفاصيل إضافية</h5>
-                <div className="mb-3">
-                  <h6>العنوان</h6>
-                  <p className="text-muted mb-1">بالعربية: {viewProject.details?.titleAr}</p>
-                  <p>بالإنجليزية: {viewProject.details?.title}</p>
+              {viewProject.donationLinks && viewProject.donationLinks.length > 0 && (
+                <div className="mb-4">
+                  <h5 className="border-bottom pb-2">روابط التبرع</h5>
+                  <div className="row">
+                    {viewProject.donationLinks.map((link, index) => (
+                      <div key={index} className="col-md-6 mb-3">
+                        <div className="card h-100 p-3">
+                          <div className="d-flex align-items-center mb-2">
+                            {link.icon && (
+                              <img
+                                src={`http://localhost:3500/uploads/payment-icons/${link.icon}`}
+                                alt={link.methodName}
+                                className="me-2"
+                                style={{ height: "30px", width: "auto" }}
+                              />
+                            )}
+                            <strong>{link.methodName}</strong>
+                          </div>
+                          <a href={link.link} target="_blank" rel="noopener noreferrer">
+                            {link.link}
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-
-                <div className="mb-3">
-                  <h6>الوصف الأول</h6>
-                  <p className="text-muted mb-1">بالعربية: {viewProject.details?.description1Ar}</p>
-                  <p>بالإنجليزية: {viewProject.details?.description1}</p>
-                </div>
-
-                <div className="mb-3">
-                  <h6>الوصف الثاني</h6>
-                  <p className="text-muted mb-1">بالعربية: {viewProject.details?.description2Ar}</p>
-                  <p>بالإنجليزية: {viewProject.details?.description2}</p>
-                </div>
-              </div>
+              )}
             </div>
           )}
         </Modal.Body>

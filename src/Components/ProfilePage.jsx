@@ -23,7 +23,7 @@ const ProfilePage = () => {
     try {
       const token = localStorage.getItem("token");
       const userId = localStorage.getItem("userId");
-      
+
       console.log("Fetching profile for user ID:", userId);
 
       if (!token || !userId) {
@@ -54,7 +54,7 @@ const ProfilePage = () => {
       }
 
       // If we couldn't get from stored user, try API
-      const response = await axios.get(`https://oneheart.team/api/users/${userId}`, {
+      const response = await axios.get(`http://localhost:3500/api/users/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -63,10 +63,10 @@ const ProfilePage = () => {
         newPassword: "",
         confirmPassword: "",
       });
-      
+
       // Store username in localStorage for NavBar to use if API fails
       localStorage.setItem("username", response.data.username);
-      
+
     } catch (error) {
       console.error("Error fetching user profile:", error);
       setError("حدث خطأ أثناء جلب بيانات الملف الشخصي");
@@ -141,7 +141,7 @@ const ProfilePage = () => {
       }
 
       await axios.put(
-        `https://oneheart.team/api/users/${userId}`,
+        `http://localhost:3500/api/users/${userId}`,
         updateData,
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -150,7 +150,7 @@ const ProfilePage = () => {
 
       // Update localStorage with new username
       localStorage.setItem("username", user.username);
-      
+
       // Update the stored user object
       const storedUser = localStorage.getItem("user");
       if (storedUser) {
@@ -164,7 +164,7 @@ const ProfilePage = () => {
       }
 
       setSuccess("تم تحديث الملف الشخصي بنجاح");
-      
+
       // Reset password fields
       setUser({
         ...user,
@@ -180,7 +180,7 @@ const ProfilePage = () => {
     } catch (error) {
       console.error("Error updating profile:", error);
       setError(error.response?.data?.message || "حدث خطأ أثناء تحديث الملف الشخصي");
-      
+
       Swal.fire({
         icon: "error",
         title: "خطأ",

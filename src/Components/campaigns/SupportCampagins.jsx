@@ -20,11 +20,29 @@ export default function SupportCampaigns() {
     setLoading(true);
     try {
       const response = await axios.get(
-        "https://oneheart.team/api/support-campaigns"
+        "http://localhost:3500/api/support-campaigns"
       );
-      setCampaigns(response.data);
+
+      // Ensure campaigns is always an array
+      if (response.data && Array.isArray(response.data)) {
+        setCampaigns(response.data);
+      } else {
+        console.error("API did not return an array:", response.data);
+        setCampaigns([]);
+        Swal.fire({
+          icon: 'warning',
+          title: 'تنبيه',
+          text: 'تم استلام بيانات غير صالحة من الخادم',
+        });
+      }
     } catch (error) {
       console.error("Error fetching campaigns:", error);
+      setCampaigns([]);
+      Swal.fire({
+        icon: 'error',
+        title: 'خطأ',
+        text: 'خطأ في جلب البيانات',
+      });
     } finally {
       setLoading(false);
     }
@@ -39,9 +57,21 @@ export default function SupportCampaigns() {
     setValidated(false);
     setFormErrors({});
     setTouched({});
-    
+
     if (mode === "edit") {
-      const details = campaign.details || {};
+      // Parse donation links if they exist
+      let parsedDonationLinks = [];
+      if (campaign.donationLinks) {
+        try {
+          parsedDonationLinks = typeof campaign.donationLinks === 'string'
+            ? JSON.parse(campaign.donationLinks)
+            : campaign.donationLinks;
+        } catch (error) {
+          console.error("Error parsing donation links:", error);
+          parsedDonationLinks = [];
+        }
+      }
+
       setSelectedCampaign({
         ...campaign,
         title: campaign.title || "",
@@ -52,14 +82,7 @@ export default function SupportCampaigns() {
         categoryAr: campaign.categoryAr || "",
         total: campaign.total || 0,
         paid: campaign.paid || 0,
-        details: {
-          title: details.title || "",
-          titleAr: details.titleAr || "",
-          description1: details.description1 || "",
-          description1Ar: details.description1Ar || "",
-          description2: details.description2 || "",
-          description2Ar: details.description2Ar || "",
-        }
+        donationLinks: parsedDonationLinks
       });
     } else {
       // For add mode, initialize with empty values
@@ -72,14 +95,7 @@ export default function SupportCampaigns() {
         categoryAr: "",
         total: 0,
         paid: 0,
-        details: {
-          title: "",
-          titleAr: "",
-          description1: "",
-          description1Ar: "",
-          description2: "",
-          description2Ar: "",
-        }
+        donationLinks: []
       });
     }
     setModalMode(mode);
@@ -97,14 +113,7 @@ export default function SupportCampaigns() {
       categoryAr: "",
       total: 0,
       paid: 0,
-      details: {
-        title: "",
-        titleAr: "",
-        description1: "",
-        description1Ar: "",
-        description2: "",
-        description2Ar: "",
-      }
+      donationLinks: []
     });
   };
 
@@ -123,13 +132,13 @@ export default function SupportCampaigns() {
         [field]: value
       });
     }
-    
+
     // Mark field as touched
     setTouched({
       ...touched,
       [isDetailsField ? `details.${field}` : field]: true
     });
-    
+
     // Validate the field
     validateField(field, value, isDetailsField);
   };
@@ -137,21 +146,21 @@ export default function SupportCampaigns() {
   const validateField = (field, value, isDetailsField = false) => {
     const newErrors = { ...formErrors };
     const fieldPath = isDetailsField ? `details.${field}` : field;
-    
+
     // Clear previous error
     delete newErrors[fieldPath];
-    
+
     // Required fields validation
     const requiredFields = ['title', 'titleAr', 'description', 'descriptionAr', 'total', 'paid'];
     if (requiredFields.includes(field) && (!value || value.trim() === '')) {
       newErrors[fieldPath] = 'This field is required';
     }
-    
+
     // Numeric fields validation
     if ((field === 'total' || field === 'paid') && isNaN(Number(value))) {
       newErrors[fieldPath] = 'Must be a number';
     }
-    
+
     setFormErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -159,7 +168,7 @@ export default function SupportCampaigns() {
   const validateForm = () => {
     const newErrors = {};
     const requiredFields = ['title', 'titleAr', 'description', 'descriptionAr', 'total', 'paid'];
-    
+
     // Validate main fields
     requiredFields.forEach(field => {
       const value = selectedCampaign[field];
@@ -167,136 +176,106 @@ export default function SupportCampaigns() {
         newErrors[field] = 'This field is required';
       }
     });
-    
+
     // Validate numeric fields
     if (isNaN(Number(selectedCampaign.total))) {
       newErrors.total = 'Must be a number';
     }
-    
+
     if (isNaN(Number(selectedCampaign.paid))) {
       newErrors.paid = 'Must be a number';
     }
-    
+
     // Check if image is provided for new campaigns
     if (modalMode === 'add' && !selectedCampaign.image) {
       newErrors.image = 'Campaign image is required';
     }
-    
+
     setFormErrors(newErrors);
     setValidated(true);
-    
+
     // Mark all fields as touched
     const newTouched = {};
     [...requiredFields, 'image', 'category', 'categoryAr'].forEach(field => {
       newTouched[field] = true;
     });
     setTouched(newTouched);
-    
+
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSaveCampaign = async () => {
-    if (!validateForm()) {
-      await Swal.fire({
-        title: 'تحقق من البيانات',
-        text: 'يرجى التأكد من إدخال جميع الحقول المطلوبة بشكل صحيح',
-        icon: 'warning',
-        confirmButtonText: 'حسناً'
-      });
-      return;
-    }
-    
-    setLoading(true);
-    const formData = new FormData();
+    // Form validation
+    if (!validateForm()) return;
 
     try {
-      // Append main fields
-      formData.append('title', selectedCampaign.title);
-      formData.append('titleAr', selectedCampaign.titleAr);
-      formData.append('description', selectedCampaign.description);
-      formData.append('descriptionAr', selectedCampaign.descriptionAr);
-      formData.append('category', selectedCampaign.category);
-      formData.append('categoryAr', selectedCampaign.categoryAr);
-      formData.append('total', selectedCampaign.total);
-      formData.append('paid', selectedCampaign.paid);
+      setLoading(true);
+      const formData = new FormData();
 
-      // Debug image files
-      console.log("Main image:", selectedCampaign.image);
-      console.log("Details image:", selectedCampaign.details?.image);
-      
+      // Prepare campaign data
+      const campaignData = {
+        title: selectedCampaign.title,
+        titleAr: selectedCampaign.titleAr,
+        description: selectedCampaign.description,
+        descriptionAr: selectedCampaign.descriptionAr,
+        category: selectedCampaign.category,
+        categoryAr: selectedCampaign.categoryAr,
+        total: selectedCampaign.total,
+        paid: selectedCampaign.paid
+      };
+
+      // Append fields to FormData
+      Object.entries(campaignData).forEach(([key, value]) => {
+        formData.append(key, value);
+      });
+
       // Append image if new one is selected
       if (selectedCampaign.image instanceof File) {
-        formData.append("image", selectedCampaign.image);
-        console.log("Appended main image to formData");
-      } else if (modalMode === "add") {
-        await Swal.fire({
-          title: 'صورة مطلوبة',
-          text: 'يرجى اختيار صورة للحملة',
-          icon: 'warning',
-          confirmButtonText: 'حسناً'
-        });
-        setLoading(false);
-        return;
+        formData.append('image', selectedCampaign.image);
       }
 
-      // Append details image if selected
-      if (selectedCampaign.details?.image instanceof File) {
-        formData.append("detailsImage", selectedCampaign.details.image);
-        console.log("Appended details image to formData");
+      // Handle donation links if they exist
+      if (selectedCampaign.donationLinks && selectedCampaign.donationLinks.length > 0) {
+        // Filter out incomplete donation links
+        const validLinks = selectedCampaign.donationLinks.filter(
+          link => link.methodName && link.link
+        );
+
+        if (validLinks.length > 0) {
+          formData.append("donationLinks", JSON.stringify(validLinks));
+          console.log("Appending donation links:", validLinks);
+        }
       }
 
-      // Append details as JSON
-      const detailsData = {
-        title: selectedCampaign.details?.title || '',
-        titleAr: selectedCampaign.details?.titleAr || '',
-        description1: selectedCampaign.details?.description1 || '',
-        description1Ar: selectedCampaign.details?.description1Ar || '',
-        description2: selectedCampaign.details?.description2 || '',
-        description2Ar: selectedCampaign.details?.description2Ar || ''
-      };
-      
-      formData.append('details', JSON.stringify(detailsData));
-      console.log("Details data:", detailsData);
+      // Submit the form
+      const url = modalMode === 'add'
+        ? 'http://localhost:3500/api/support-campaigns'
+        : `http://localhost:3500/api/support-campaigns/${selectedCampaign._id}`;
 
-      // Log all form data entries
-      for (let pair of formData.entries()) {
-        console.log(pair[0], pair[1]);
-      }
-
-      const url = modalMode === "add"
-          ? "https://oneheart.team/api/support-campaigns"
-          : `https://oneheart.team/api/support-campaigns/${selectedCampaign._id}`;
-
-      console.log("Sending request to:", url);
-      console.log("Request method:", modalMode === "add" ? "post" : "put");
-      
       const response = await axios({
-        method: modalMode === "add" ? "post" : "put",
+        method: modalMode === 'add' ? 'post' : 'put',
         url,
         data: formData,
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      
-      console.log("Server response:", response.data);
-
-      await Swal.fire({
-        title: 'تم بنجاح',
-        text: modalMode === "add" ? 'تمت إضافة الحملة بنجاح' : 'تم تحديث الحملة بنجاح',
-        icon: 'success',
-        confirmButtonText: 'حسناً'
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
       });
 
-      fetchCampaigns();
-      handleCloseModal();
+      if (response.status === 201 || response.status === 200) {
+        Swal.fire({
+          title: 'Success',
+          text: modalMode === 'add' ? 'Campaign added successfully' : 'Campaign updated successfully',
+          icon: 'success'
+        });
+        fetchCampaigns();
+        handleCloseModal();
+      }
     } catch (error) {
-      console.error("Error saving campaign:", error);
-      console.error("Error response:", error.response?.data);
-      
-      await Swal.fire({
-        title: 'خطأ',
-        text: error.response?.data?.message || 'حدث خطأ أثناء حفظ الحملة',
-        icon: 'error',
-        confirmButtonText: 'حسناً'
+      console.error('Error saving campaign:', error);
+      Swal.fire({
+        title: 'Error',
+        text: 'Failed to save campaign. Please try again.',
+        icon: 'error'
       });
     } finally {
       setLoading(false);
@@ -317,15 +296,15 @@ export default function SupportCampaigns() {
       });
 
       if (result.isConfirmed) {
-        await axios.delete(`https://oneheart.team/api/support-campaigns/${id}`);
-        
+        await axios.delete(`http://localhost:3500/api/support-campaigns/${id}`);
+
         await Swal.fire({
           title: 'تم الحذف!',
           text: 'تم حذف الحملة بنجاح.',
           icon: 'success',
           confirmButtonText: 'حسناً'
         });
-        
+
         fetchCampaigns();
       }
     } catch (error) {
@@ -349,8 +328,32 @@ export default function SupportCampaigns() {
     setViewCampaign(null);
   };
 
+  // Donation links management
+  const addDonationLink = () => {
+    setSelectedCampaign(prev => ({
+      ...prev,
+      donationLinks: [...(prev.donationLinks || []), { methodName: "", link: "" }]
+    }));
+  };
+
+  const updateDonationLink = (index, field, value) => {
+    setSelectedCampaign(prev => {
+      const newLinks = [...(prev.donationLinks || [])];
+      newLinks[index] = { ...newLinks[index], [field]: value };
+      return { ...prev, donationLinks: newLinks };
+    });
+  };
+
+  const removeDonationLink = (index) => {
+    setSelectedCampaign(prev => {
+      const newLinks = [...(prev.donationLinks || [])];
+      newLinks.splice(index, 1);
+      return { ...prev, donationLinks: newLinks };
+    });
+  };
+
   return (
-    <div className="container-fluid p-4"dir="rtl">
+    <div className="container-fluid p-4" dir="rtl">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>حملات الدعم</h2>
         <Button variant="primary" onClick={() => handleShowModal({}, "add")}>
@@ -373,56 +376,90 @@ export default function SupportCampaigns() {
                 <th>التصنيف</th>
                 <th>المبلغ المطلوب</th>
                 <th>المبلغ المدفوع</th>
+                <th>روابط التبرع</th>
                 <th>الإجراءات</th>
               </tr>
             </thead>
             <tbody>
-              {campaigns.map((campaign) => (
-                <tr key={campaign._id}>
-                  <td>
-                    <img
-                      src={`https://oneheart.team/uploads/support-campaigns/${campaign.image}`}
-                      alt={campaign.title}
-                      style={{ width: "100px", height: "60px", objectFit: "cover" }}
-                    />
-                  </td>
-                  <td>
-                    <div>{campaign.titleAr}</div>
-                    <small className="text-muted">{campaign.title}</small>
-                  </td>
-                  <td>
-                    <div>{campaign.categoryAr}</div>
-                    <small className="text-muted">{campaign.category}</small>
-                  </td>
-                  <td>{campaign.total}</td>
-                  <td>{campaign.paid}</td>
-                  <td>
-                    <Button
-                      variant="outline-info"
-                      size="sm"
-                      className="me-2"
-                      onClick={() => handleShowViewModal(campaign)}
-                    >
-                      عرض
-                    </Button>
-                    <Button
-                      variant="outline-primary"
-                      size="sm"
-                      className="me-2"
-                      onClick={() => handleShowModal(campaign, "edit")}
-                    >
-                      تعديل
-                    </Button>
-                    <Button
-                      variant="outline-danger"
-                      size="sm"
-                      onClick={() => handleDeleteCampaign(campaign._id)}
-                    >
-                      حذف
-                    </Button>
+              {Array.isArray(campaigns) ? (
+                campaigns.map((campaign) => (
+                  <tr key={campaign._id}>
+                    <td>
+                      <img
+                        src={`http://localhost:3500/uploads/support-campaigns/${campaign.image}`}
+                        alt={campaign.title}
+                        style={{ width: "100px", height: "60px", objectFit: "cover" }}
+                      />
+                    </td>
+                    <td>
+                      <div>{campaign.titleAr}</div>
+                      <small className="text-muted">{campaign.title}</small>
+                    </td>
+                    <td>
+                      <div>{campaign.categoryAr}</div>
+                      <small className="text-muted">{campaign.category}</small>
+                    </td>
+                    <td>{campaign.total}</td>
+                    <td>{campaign.paid}</td>
+                    <td>
+                      {campaign.donationLinks ? (
+                        (() => {
+                          let links;
+                          try {
+                            links = typeof campaign.donationLinks === 'string'
+                              ? JSON.parse(campaign.donationLinks)
+                              : campaign.donationLinks;
+
+                            return links && links.length > 0 ? (
+                              <span className="badge bg-success">
+                                {links.length} رابط متاح
+                              </span>
+                            ) : (
+                              <span className="badge bg-secondary">لا يوجد روابط</span>
+                            );
+                          } catch (e) {
+                            console.error("Error parsing donation links:", e);
+                            return <span className="badge bg-danger">خطأ في القراءة</span>;
+                          }
+                        })()
+                      ) : (
+                        <span className="badge bg-secondary">لا يوجد روابط</span>
+                      )}
+                    </td>
+                    <td>
+                      <Button
+                        variant="outline-info"
+                        size="sm"
+                        className="me-2"
+                        onClick={() => handleShowViewModal(campaign)}
+                      >
+                        عرض
+                      </Button>
+                      <Button
+                        variant="outline-primary"
+                        size="sm"
+                        className="me-2"
+                        onClick={() => handleShowModal(campaign, "edit")}
+                      >
+                        تعديل
+                      </Button>
+                      <Button
+                        variant="outline-danger"
+                        size="sm"
+                        onClick={() => handleDeleteCampaign(campaign._id)}
+                      >
+                        حذف
+                      </Button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="7" className="text-center">
+                    لا توجد حملات متاحة أو حدث خطأ في تحميل البيانات.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </Table>
         </div>
@@ -497,39 +534,6 @@ export default function SupportCampaigns() {
                     {formErrors.categoryAr}
                   </Form.Control.Feedback>
                 </Form.Group>
-
-                {/* Arabic Details */}
-                <div className="border rounded p-3 mb-3">
-                  <h6 className="mb-3">تفاصيل إضافية</h6>
-                  <Form.Group className="mb-3">
-                    <Form.Label>عنوان التفاصيل</Form.Label>
-                    <Form.Control
-                      type="text"
-                      value={selectedCampaign.details?.titleAr || ""}
-                      onChange={(e) => handleFieldChange('titleAr', e.target.value, true)}
-                    />
-                  </Form.Group>
-
-                  <Form.Group className="mb-3">
-                    <Form.Label>الوصف الأول</Form.Label>
-                    <Form.Control
-                      as="textarea"
-                      rows={3}
-                      value={selectedCampaign.details?.description1Ar || ""}
-                      onChange={(e) => handleFieldChange('description1Ar', e.target.value, true)}
-                    />
-                  </Form.Group>
-
-                  <Form.Group className="mb-3">
-                    <Form.Label>الوصف الثاني</Form.Label>
-                    <Form.Control
-                      as="textarea"
-                      rows={3}
-                      value={selectedCampaign.details?.description2Ar || ""}
-                      onChange={(e) => handleFieldChange('description2Ar', e.target.value, true)}
-                    />
-                  </Form.Group>
-                </div>
               </Tab>
 
               <Tab eventKey="en" title="English">
@@ -572,56 +576,8 @@ export default function SupportCampaigns() {
                     {formErrors.category}
                   </Form.Control.Feedback>
                 </Form.Group>
-
-                {/* English Details */}
-                <div className="border rounded p-3 mb-3">
-                  <h6 className="mb-3">Additional Details</h6>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Details Title</Form.Label>
-                    <Form.Control
-                      type="text"
-                      value={selectedCampaign.details?.title || ""}
-                      onChange={(e) => handleFieldChange('title', e.target.value, true)}
-                    />
-                  </Form.Group>
-
-                  <Form.Group className="mb-3">
-                    <Form.Label>First Description</Form.Label>
-                    <Form.Control
-                      as="textarea"
-                      rows={3}
-                      value={selectedCampaign.details?.description1 || ""}
-                      onChange={(e) => handleFieldChange('description1', e.target.value, true)}
-                    />
-                  </Form.Group>
-
-                  <Form.Group className="mb-3">
-                    <Form.Label>Second Description</Form.Label>
-                    <Form.Control
-                      as="textarea"
-                      rows={3}
-                      value={selectedCampaign.details?.description2 || ""}
-                      onChange={(e) => handleFieldChange('description2', e.target.value, true)}
-                    />
-                  </Form.Group>
-                </div>
               </Tab>
             </Tabs>
-
-            {/* Details Image */}
-            <Form.Group className="mb-4">
-              <Form.Label className="fw-bold">صورة التفاصيل / Details Image</Form.Label>
-              <Form.Control
-                type="file"
-                onChange={(e) => setSelectedCampaign({
-                  ...selectedCampaign,
-                  details: {
-                    ...selectedCampaign.details,
-                    image: e.target.files[0]
-                  }
-                })}
-              />
-            </Form.Group>
 
             {/* Common Fields */}
             <div className="border rounded p-3">
@@ -657,6 +613,62 @@ export default function SupportCampaigns() {
                 </div>
               </div>
             </div>
+
+            {/* Donation Links Section */}
+            <div className="border rounded p-3 mt-3">
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <h6 className="mb-0">روابط التبرع / Donation Links</h6>
+                <Button variant="success" size="sm" onClick={addDonationLink}>
+                  إضافة رابط جديد / Add New Link
+                </Button>
+              </div>
+
+              {selectedCampaign.donationLinks && selectedCampaign.donationLinks.length > 0 ? (
+                selectedCampaign.donationLinks.map((link, index) => (
+                  <div key={index} className="border rounded p-2 mb-2">
+                    <div className="row mb-2">
+                      <div className="col-md-6">
+                        <Form.Group>
+                          <Form.Label className="fw-bold">طريقة الدفع / Payment Method</Form.Label>
+                          <Form.Control
+                            type="text"
+                            placeholder="PayPal, Bank Transfer, etc."
+                            value={link.methodName || ""}
+                            onChange={(e) => updateDonationLink(index, 'methodName', e.target.value)}
+                          />
+                        </Form.Group>
+                      </div>
+                      <div className="col-md-6">
+                        <Form.Group>
+                          <Form.Label className="fw-bold">رابط الدفع / Payment Link</Form.Label>
+                          <Form.Control
+                            type="text"
+                            placeholder="https://..."
+                            value={link.link || ""}
+                            onChange={(e) => updateDonationLink(index, 'link', e.target.value)}
+                          />
+                        </Form.Group>
+                      </div>
+                    </div>
+                    <div className="text-end">
+                      <Button
+                        variant="outline-danger"
+                        size="sm"
+                        onClick={() => removeDonationLink(index)}
+                      >
+                        حذف / Remove
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-muted text-center my-3">
+                  لا توجد روابط تبرع. انقر على "إضافة رابط جديد" لإضافة روابط.
+                  <br />
+                  No donation links. Click "Add New Link" to add links.
+                </p>
+              )}
+            </div>
           </Form>
         </Modal.Body>
         <Modal.Footer>
@@ -686,7 +698,7 @@ export default function SupportCampaigns() {
             <div className="view-campaign-details">
               <div className="text-center mb-4">
                 <img
-                  src={`https://oneheart.team/uploads/support-campaigns/${viewCampaign.image}`}
+                  src={`http://localhost:3500/uploads/support-campaigns/${viewCampaign.image}`}
                   alt={viewCampaign.title}
                   className="img-fluid"
                   style={{ maxHeight: "300px", objectFit: "contain" }}
@@ -710,34 +722,51 @@ export default function SupportCampaigns() {
               <h4>المبلغ المدفوع</h4>
               <p>{viewCampaign.paid}</p>
 
-              {viewCampaign.details && (
-                <div className="mt-4">
-                  <h4>تفاصيل إضافية</h4>
-                  
-                  {viewCampaign.details.image && (
-                    <div className="text-center mb-3">
-                      <img
-                        src={`https://oneheart.team/uploads/support-campaigns/${viewCampaign.details.image}`}
-                        alt="Details"
-                        className="img-fluid"
-                        style={{ maxHeight: "200px", objectFit: "contain" }}
-                      />
-                    </div>
-                  )}
-                  
-                  <h5>عنوان التفاصيل</h5>
-                  <p className="text-muted">{viewCampaign.details.titleAr}</p>
-                  <p>{viewCampaign.details.title}</p>
-                  
-                  <h5>الوصف الأول</h5>
-                  <p className="text-muted">{viewCampaign.details.description1Ar}</p>
-                  <p>{viewCampaign.details.description1}</p>
-                  
-                  <h5>الوصف الثاني</h5>
-                  <p className="text-muted">{viewCampaign.details.description2Ar}</p>
-                  <p>{viewCampaign.details.description2}</p>
-                </div>
-              )}
+              <h4>روابط التبرع / Donation Links</h4>
+              <div className="border rounded p-3">
+                {viewCampaign.donationLinks ? (
+                  (() => {
+                    let links;
+                    try {
+                      links = typeof viewCampaign.donationLinks === 'string'
+                        ? JSON.parse(viewCampaign.donationLinks)
+                        : viewCampaign.donationLinks;
+
+                      if (links && links.length > 0) {
+                        return (
+                          <div className="row row-cols-1 row-cols-md-2 g-3">
+                            {links.map((link, index) => (
+                              <div key={index} className="col">
+                                <div className="card h-100">
+                                  <div className="card-body">
+                                    <h5 className="card-title">{link.methodName}</h5>
+                                    <p className="card-text text-truncate">{link.link}</p>
+                                    <a
+                                      href={link.link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="btn btn-sm btn-primary"
+                                    >
+                                      فتح الرابط / Open Link
+                                    </a>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      } else {
+                        return <p className="text-muted">لا توجد روابط تبرع متاحة</p>;
+                      }
+                    } catch (e) {
+                      console.error("Error parsing donation links:", e);
+                      return <p className="text-danger">خطأ في قراءة روابط التبرع</p>;
+                    }
+                  })()
+                ) : (
+                  <p className="text-muted">لا توجد روابط تبرع متاحة</p>
+                )}
+              </div>
             </div>
           )}
         </Modal.Body>

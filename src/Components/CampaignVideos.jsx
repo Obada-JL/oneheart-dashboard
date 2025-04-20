@@ -15,7 +15,7 @@ export default function CampaignVideos() {
   const fetchCampaignVideos = async () => {
     try {
       setLoading(true);
-      const response = await axios.get("https://oneheart.team/api/campaign-videos");
+      const response = await axios.get("http://localhost:3500/api/campaign-videos");
       setVideos(response.data);
     } catch (error) {
       console.error("Error fetching campaign videos:", error);
@@ -31,17 +31,17 @@ export default function CampaignVideos() {
 
   const handleVideoUpload = async (event) => {
     event.preventDefault();
-    
+
     if (!selectedVideo) {
       Swal.fire("خطأ!", "الرجاء اختيار فيديو", "error");
       return;
     }
-    
+
     if (!selectedThumbnail) {
       Swal.fire("خطأ!", "الرجاء اختيار صورة مصغرة للفيديو", "error");
       return;
     }
-    
+
     if (!videoTitle || !videoTitleAr) {
       Swal.fire("خطأ!", "الرجاء إدخال عنوان الفيديو بكلا اللغتين", "error");
       return;
@@ -55,7 +55,7 @@ export default function CampaignVideos() {
 
     try {
       setUploadingVideo(true);
-      await axios.post("https://oneheart.team/api/campaign-videos", formData, {
+      await axios.post("http://localhost:3500/api/campaign-videos", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       Swal.fire("تم!", "تم رفع الفيديو بنجاح", "success");
@@ -89,7 +89,7 @@ export default function CampaignVideos() {
       if (result.isConfirmed) {
         try {
           setLoading(true);
-          await axios.delete(`https://oneheart.team/api/campaign-videos/${id}`);
+          await axios.delete(`http://localhost:3500/api/campaign-videos/${id}`);
           Swal.fire("تم الحذف!", "تم حذف الفيديو بنجاح.", "success");
           fetchCampaignVideos();
         } catch (error) {
@@ -111,10 +111,10 @@ export default function CampaignVideos() {
     <div className="p-4 bg-light" dir="rtl">
       <div className="mb-4">
         <h2 className="mb-4 border-bottom pb-3">فيديوهات الحملات الأخيرة</h2>
-        
+
         <Form onSubmit={handleVideoUpload} className="border p-4 rounded mb-4 shadow-sm bg-white">
           <h5 className="mb-3 border-bottom pb-2">إضافة فيديو جديد</h5>
-          
+
           <div className="row">
             <div className="col-md-6">
               <Form.Group className="mb-3">
@@ -127,7 +127,7 @@ export default function CampaignVideos() {
                 />
               </Form.Group>
             </div>
-            
+
             <div className="col-md-6">
               <Form.Group className="mb-3">
                 <Form.Label>عنوان الفيديو (بالإنجليزية)</Form.Label>
@@ -140,7 +140,7 @@ export default function CampaignVideos() {
               </Form.Group>
             </div>
           </div>
-          
+
           <div className="row">
             <div className="col-md-6">
               <Form.Group className="mb-3">
@@ -157,7 +157,7 @@ export default function CampaignVideos() {
                 </Form.Text>
               </Form.Group>
             </div>
-            
+
             <div className="col-md-6">
               <Form.Group className="mb-3">
                 <Form.Label>الصورة المصغرة للفيديو</Form.Label>
@@ -174,10 +174,10 @@ export default function CampaignVideos() {
               </Form.Group>
             </div>
           </div>
-          
+
           <div className="text-end mt-3">
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               variant="primary"
               disabled={uploadingVideo}
             >
@@ -199,7 +199,7 @@ export default function CampaignVideos() {
             </Button>
           </div>
         </Form>
-        
+
         {loading ? (
           <div className="text-center my-5">
             <Spinner animation="border" variant="primary" />
@@ -216,10 +216,10 @@ export default function CampaignVideos() {
                         controls
                         className="card-img-top"
                         style={{ height: "300px", objectFit: "cover" }}
-                        poster={`https://oneheart.team/uploads/campaign-thumbnails/${video.thumbnail}`}
+                        poster={`http://localhost:3500/uploads/campaign-thumbnails/${video.thumbnail}`}
                       >
                         <source
-                          src={`https://oneheart.team/uploads/campaign-videos/${video.video}`}
+                          src={`http://localhost:3500/uploads/campaign-videos/${video.video}`}
                           type="video/mp4"
                         />
                         Your browser does not support the video tag.

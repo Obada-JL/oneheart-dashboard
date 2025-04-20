@@ -6,7 +6,7 @@ import { Spinner } from 'react-bootstrap';
 const AdminRoute = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  
+
   useEffect(() => {
     const checkAdminStatus = async () => {
       try {
@@ -20,21 +20,21 @@ const AdminRoute = ({ children }) => {
             return;
           }
         }
-        
+
         // If that fails, try to verify with the API
         const token = localStorage.getItem("token");
         const userId = localStorage.getItem("userId");
-        
+
         if (!token || !userId) {
           setIsAdmin(false);
           setLoading(false);
           return;
         }
-        
-        const response = await axios.get(`https://oneheart.team/api/users/${userId}`, {
+
+        const response = await axios.get(`http://localhost:3500/api/users/${userId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        
+
         setIsAdmin(response.data.role === "admin");
       } catch (error) {
         console.error("Error checking admin status:", error);
@@ -43,10 +43,10 @@ const AdminRoute = ({ children }) => {
         setLoading(false);
       }
     };
-    
+
     checkAdminStatus();
   }, []);
-  
+
   if (loading) {
     return (
       <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "100vh" }}>
@@ -54,11 +54,11 @@ const AdminRoute = ({ children }) => {
       </div>
     );
   }
-  
+
   if (!isAdmin) {
     return <Navigate to="/" replace />;
   }
-  
+
   return children;
 };
 

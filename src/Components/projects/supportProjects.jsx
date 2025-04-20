@@ -6,7 +6,16 @@ import Swal from 'sweetalert2';
 export default function SupportProjects() {
   const [projects, setProjects] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [selectedProject, setSelectedProject] = useState({});
+  const [selectedProject, setSelectedProject] = useState({
+    title: "",
+    titleAr: "",
+    description: "",
+    descriptionAr: "",
+    category: "",
+    categoryAr: "",
+    image: null,
+    donationLinks: []
+  });
   const [modalMode, setModalMode] = useState("add");
   const [loading, setLoading] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
@@ -20,7 +29,7 @@ export default function SupportProjects() {
     setLoading(true);
     try {
       const response = await axios.get(
-        "https://oneheart.team/api/support-projects"
+        "http://localhost:3500/api/support-projects"
       );
       setProjects(response.data);
     } catch (error) {
@@ -39,9 +48,22 @@ export default function SupportProjects() {
     setValidated(false);
     setFormErrors({});
     setTouched({});
-    
+
     if (mode === "edit") {
-      const details = project.details || {};
+      // Parse donation links if they exist
+      let parsedDonationLinks = [];
+      if (project.donationLinks) {
+        if (typeof project.donationLinks === 'string') {
+          try {
+            parsedDonationLinks = JSON.parse(project.donationLinks);
+          } catch (error) {
+            console.error("Error parsing donation links:", error);
+          }
+        } else if (Array.isArray(project.donationLinks)) {
+          parsedDonationLinks = project.donationLinks;
+        }
+      }
+
       setSelectedProject({
         ...project,
         title: project.title || "",
@@ -50,17 +72,7 @@ export default function SupportProjects() {
         descriptionAr: project.descriptionAr || "",
         category: project.category || "",
         categoryAr: project.categoryAr || "",
-        // total: project.total || "",
-        // paid: project.paid || "",
-        details: {
-          title: details.title || "",
-          titleAr: details.titleAr || "",
-          description1: details.description1 || "",
-          description1Ar: details.description1Ar || "",
-          description2: details.description2 || "",
-          description2Ar: details.description2Ar || "",
-          image: details.image || null
-        }
+        donationLinks: parsedDonationLinks,
       });
     } else {
       setSelectedProject({
@@ -70,17 +82,7 @@ export default function SupportProjects() {
         descriptionAr: "",
         category: "",
         categoryAr: "",
-        // total: "",
-        // paid: "",
-        details: {
-          title: "",
-          titleAr: "",
-          description1: "",
-          description1Ar: "",
-          description2: "",
-          description2Ar: "",
-          image: null
-        }
+        donationLinks: []
       });
     }
     setModalMode(mode);
@@ -97,7 +99,7 @@ export default function SupportProjects() {
   // Field change handler with validation
   const handleFieldChange = (field, value, isDetailsField = false) => {
     let updatedProject;
-    
+
     if (isDetailsField) {
       updatedProject = {
         ...selectedProject,
@@ -112,15 +114,15 @@ export default function SupportProjects() {
         [field]: value
       };
     }
-    
+
     setSelectedProject(updatedProject);
-    
+
     // Mark field as touched
     setTouched(prev => ({
       ...prev,
       [isDetailsField ? `details.${field}` : field]: true
     }));
-    
+
     // Validate the field
     validateField(field, value, isDetailsField);
   };
@@ -129,18 +131,18 @@ export default function SupportProjects() {
   const validateField = (field, value, isDetailsField = false) => {
     const errors = { ...formErrors };
     const fieldPath = isDetailsField ? `details.${field}` : field;
-    
+
     // Clear previous error
     delete errors[fieldPath];
-    
+
     // Required fields validation
     const requiredFields = ['title', 'titleAr', 'description', 'descriptionAr',];
     if (requiredFields.includes(field) && (!value || value.trim() === '')) {
       errors[fieldPath] = 'This field is required';
     }
-    
+
     // Numeric fields validation
-    
+
     setFormErrors(errors);
   };
 
@@ -148,191 +150,138 @@ export default function SupportProjects() {
   const validateForm = () => {
     const errors = {};
     const requiredFields = ['title', 'titleAr', 'description', 'descriptionAr'];
-    
+
     // Check required fields
     requiredFields.forEach(field => {
-      if (selectedProject[field] === undefined || selectedProject[field] === null || 
-          (typeof selectedProject[field] === 'string' && selectedProject[field].trim() === '')) {
+      if (selectedProject[field] === undefined || selectedProject[field] === null ||
+        (typeof selectedProject[field] === 'string' && selectedProject[field].trim() === '')) {
         errors[field] = 'This field is required';
       }
     });
-    
-    // Check numeric fields
-    // ['total', 'paid'].forEach(field => {
-    //   if (selectedProject[field] !== undefined && selectedProject[field] !== '') {
-    //     if (isNaN(Number(selectedProject[field]))) {
-    //       errors[field] = 'Must be a valid number';
-    //     } else if (Number(selectedProject[field]) < 0) {
-    //       errors[field] = 'Cannot be negative';
-    //     }
-    //   }
-    // });
-    
-    // Check business logic
-    // if (
-    //   !isNaN(Number(selectedProject.paid)) && 
-    //   !isNaN(Number(selectedProject.total)) && 
-    //   Number(selectedProject.paid) > Number(selectedProject.total)
-    // ) {
-    //   errors['paid'] = 'Cannot exceed total amount';
-    // }
-    
+
     // Check image in add mode only
     if (modalMode === 'add' && !selectedProject.image) {
       errors['image'] = 'Main image is required';
     }
-    
+
     setFormErrors(errors);
     setTouched(requiredFields.reduce((acc, field) => ({ ...acc, [field]: true }), {}));
-    
+
     return Object.keys(errors).length === 0;
   };
 
-  const handleSaveProject = async () => {
-    // Validate all fields before submission
-    const isValid = validateForm();
-    setValidated(true);
-    
-    if (!isValid) {
-      // Debug which fields are missing
-      const missingFields = Object.entries(formErrors)
-        .map(([field, error]) => `${field}: ${error}`)
-        .join('<br>');
-      
-      console.log("Form validation failed. Current project data:", selectedProject);
-      console.log("Validation errors:", formErrors);
-      
-      await Swal.fire({
-        title: 'Validation Error',
-        html: `Please correct the following errors:<br>${missingFields}`,
-        icon: 'error',
-        confirmButtonText: 'OK'
-      });
-      return;
-    }
-    
+  const handleSaveProject = async (e) => {
+    e.preventDefault();
     setLoading(true);
     const formData = new FormData();
 
     try {
-      // Prepare form data with proper type conversion
-      const fieldsToSend = {
-        title: selectedProject.title?.trim() || "",
-        titleAr: selectedProject.titleAr?.trim() || "",
-        description: selectedProject.description?.trim() || "",
-        descriptionAr: selectedProject.descriptionAr?.trim() || "",
-        category: selectedProject.category?.trim() || "",
-        categoryAr: selectedProject.categoryAr?.trim() || "",
-        // total: Number(selectedProject.total || 0),
-        // paid: Number(selectedProject.paid || 0),
+      // Validate all required fields
+      const requiredFields = {
+        title: "العنوان بالإنجليزية",
+        titleAr: "العنوان بالعربية",
+        description: "الوصف بالإنجليزية",
+        descriptionAr: "الوصف بالعربية",
+        category: "التصنيف بالإنجليزية",
+        categoryAr: "التصنيف بالعربية",
       };
 
-      console.log("Sending data to server:", fieldsToSend);
-
-      // Append main fields with proper type conversion
-      Object.entries(fieldsToSend).forEach(([key, value]) => {
-        formData.append(key, value);
+      const missingFields = [];
+      Object.entries(requiredFields).forEach(([field, label]) => {
+        if (!selectedProject[field]) {
+          missingFields.push(label);
+        }
       });
 
-      // Handle image field - critical for both add and edit modes
+      if (modalMode === "add" && !selectedProject.image) {
+        missingFields.push("الصورة الرئيسية");
+      }
+
+      if (missingFields.length > 0) {
+        await Swal.fire({
+          title: 'حقول مطلوبة',
+          html: `الرجاء إكمال الحقول التالية:<br>${missingFields.join("<br>")}`,
+          icon: 'warning',
+          confirmButtonText: 'حسناً'
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Append main fields
+      Object.entries(requiredFields).forEach(([field]) => {
+        formData.append(field, selectedProject[field] || "");
+      });
+
+      // Append main image
       if (selectedProject.image instanceof File) {
         formData.append("image", selectedProject.image);
-        console.log("Appending image file to form data:", selectedProject.image.name);
-      } else if (modalMode === "edit" && selectedProject.image) {
-        // For edit mode, if image is not a File but exists (string path), we don't need to send it
-        // The backend will keep the existing image
-        console.log("Using existing image:", selectedProject.image);
       }
 
-      // Handle details object
-      if (selectedProject.details) {
-        const details = {
-          title: selectedProject.details.title?.trim() || "",
-          titleAr: selectedProject.details.titleAr?.trim() || "",
-          description1: selectedProject.details.description1?.trim() || "",
-          description1Ar: selectedProject.details.description1Ar?.trim() || "",
-          description2: selectedProject.details.description2?.trim() || "",
-          description2Ar: selectedProject.details.description2Ar?.trim() || "",
-        };
+      // Handle donation links
+      if (selectedProject.donationLinks && selectedProject.donationLinks.length > 0) {
+        // Filter out incomplete donation links
+        const validLinks = selectedProject.donationLinks.filter(
+          link => link.methodName && link.link
+        );
 
-        // Handle details image separately
-        if (selectedProject.details.image instanceof File) {
-          formData.append("detailsImage", selectedProject.details.image);
-          console.log("Appending details image file:", selectedProject.details.image.name);
-        } else if (selectedProject.details.image) {
-          // If details image exists but is not a File (string path), include it in the details object
-          details.image = selectedProject.details.image;
-          console.log("Using existing details image:", selectedProject.details.image);
+        if (validLinks.length > 0) {
+          // Create a clean version of the links for JSON (without File objects)
+          const cleanLinks = validLinks.map((link, index) => {
+            // If the icon is a File object, we'll upload it separately
+            if (link.icon instanceof File) {
+              // Append the file to formData with a unique name
+              formData.append(`donationIcon_${index}`, link.icon);
+
+              // Return link without icon (backend will connect them)
+              return {
+                methodName: link.methodName,
+                link: link.link,
+                iconIndex: index // Add index to associate with the uploaded file
+              };
+            } else {
+              // Keep the existing icon string
+              return {
+                methodName: link.methodName,
+                link: link.link,
+                icon: link.icon
+              };
+            }
+          });
+
+          // Add the sanitized links to formData
+          formData.append("donationLinks", JSON.stringify(cleanLinks));
         }
-
-        formData.append("details", JSON.stringify(details));
       }
 
-      // Log all form data entries for debugging
-      for (let pair of formData.entries()) {
-        console.log(pair[0] + ': ' + (pair[1] instanceof File ? pair[1].name : pair[1]));
-      }
-
-      const url = modalMode === "add"
-        ? "https://oneheart.team/api/support-projects"
-        : `https://oneheart.team/api/support-projects/${selectedProject._id}`;
+      const url =
+        modalMode === "add"
+          ? "http://localhost:3500/api/support-projects"
+          : `http://localhost:3500/api/support-projects/${selectedProject._id}`;
 
       const method = modalMode === "add" ? "post" : "put";
 
-      console.log(`Sending ${method.toUpperCase()} request to ${url}`);
-      
-      const response = await axios[method](url, formData, {
-        headers: { 
-          "Content-Type": "multipart/form-data"
-        },
+      await axios[method](url, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
 
-      if (response.data) {
-        await Swal.fire({
-          title: 'Success',
-          text: modalMode === "add" ? 'Project added successfully' : 'Project updated successfully',
-          icon: 'success',
-          confirmButtonText: 'OK'
-        });
+      await Swal.fire({
+        title: 'تم بنجاح',
+        text: modalMode === "add" ? 'تم إضافة المشروع بنجاح' : 'تم تحديث المشروع بنجاح',
+        icon: 'success',
+        confirmButtonText: 'حسناً'
+      });
 
-        fetchProjects();
-        handleCloseModal();
-      }
+      fetchProjects();
+      handleCloseModal();
     } catch (error) {
       console.error("Error saving project:", error);
-      let errorMessage = "Error saving project";
-      
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      if (error.response?.data?.errors) {
-        // Handle validation errors from server
-        const serverErrors = error.response.data.errors;
-        console.log("Server validation errors:", serverErrors);
-        
-        const errorList = Object.entries(serverErrors)
-          .map(([field, message]) => `${field}: ${message}`)
-          .join('<br>');
-        
-        await Swal.fire({
-          title: 'Validation Error',
-          html: `Server validation failed:<br>${errorList}`,
-          icon: 'error',
-          confirmButtonText: 'OK'
-        });
-      } else {
-        await Swal.fire({
-          title: 'Error',
-          text: errorMessage,
-          icon: 'error',
-          confirmButtonText: 'OK'
-        });
-      }
+      await Swal.fire({
+        title: 'خطأ',
+        text: error.response?.data?.message || "حدث خطأ أثناء حفظ المشروع",
+        icon: 'error',
+        confirmButtonText: 'حسناً'
+      });
     } finally {
       setLoading(false);
     }
@@ -353,7 +302,7 @@ export default function SupportProjects() {
     if (result.isConfirmed) {
       setLoading(true);
       try {
-        await axios.delete(`https://oneheart.team/api/support-projects/${id}`);
+        await axios.delete(`http://localhost:3500/api/support-projects/${id}`);
         await Swal.fire({
           title: 'تم الحذف!',
           text: 'تم حذف المشروع بنجاح.',
@@ -386,6 +335,40 @@ export default function SupportProjects() {
     setViewProject(null);
   };
 
+  // Function to add a new donation link
+  const addDonationLink = () => {
+    setSelectedProject({
+      ...selectedProject,
+      donationLinks: [
+        ...(selectedProject.donationLinks || []),
+        { methodName: "", link: "", icon: null }
+      ]
+    });
+  };
+
+  // Function to remove a donation link
+  const removeDonationLink = (index) => {
+    const updatedLinks = [...(selectedProject.donationLinks || [])];
+    updatedLinks.splice(index, 1);
+    setSelectedProject({
+      ...selectedProject,
+      donationLinks: updatedLinks
+    });
+  };
+
+  // Function to update a donation link
+  const updateDonationLink = (index, field, value) => {
+    const updatedLinks = [...(selectedProject.donationLinks || [])];
+    updatedLinks[index] = {
+      ...updatedLinks[index],
+      [field]: value
+    };
+    setSelectedProject({
+      ...selectedProject,
+      donationLinks: updatedLinks
+    });
+  };
+
   return (
     <div className="p-4 bg-light" dir="rtl">
       <div className="d-flex justify-content-between align-items-center mb-4">
@@ -408,15 +391,17 @@ export default function SupportProjects() {
                 <th>الصورة</th>
                 <th>العنوان</th>
                 <th>الوصف</th>
+                <th>التصنيف</th>
+                <th>روابط التبرع</th>
                 <th>الإجراءات</th>
               </tr>
             </thead>
             <tbody>
-              {projects.map((project) => (
+              {Array.isArray(projects) ? projects.map((project) => (
                 <tr key={project._id}>
                   <td>
                     <img
-                      src={`https://oneheart.team/uploads/support-projects/${project.image}`}
+                      src={`http://localhost:3500/uploads/support-projects/${project.image}`}
                       alt={project.title}
                       style={{
                         width: "50px",
@@ -436,6 +421,29 @@ export default function SupportProjects() {
                       <div>{project.descriptionAr?.substring(0, 100)}{project.descriptionAr?.length > 100 ? "..." : ""}</div>
                       <div className="text-muted small">{project.description?.substring(0, 100)}{project.description?.length > 100 ? "..." : ""}</div>
                     </div>
+                  </td>
+                  <td>
+                    <div>
+                      <div>{project.categoryAr}</div>
+                      <div className="text-muted small">{project.category}</div>
+                    </div>
+                  </td>
+                  <td>
+                    {project.donationLinks ? (
+                      typeof project.donationLinks === 'string' ? (
+                        JSON.parse(project.donationLinks).length > 0 ? (
+                          <span className="badge bg-success">{JSON.parse(project.donationLinks).length} روابط</span>
+                        ) : (
+                          <span className="badge bg-secondary">لا توجد روابط</span>
+                        )
+                      ) : Array.isArray(project.donationLinks) && project.donationLinks.length > 0 ? (
+                        <span className="badge bg-success">{project.donationLinks.length} روابط</span>
+                      ) : (
+                        <span className="badge bg-secondary">لا توجد روابط</span>
+                      )
+                    ) : (
+                      <span className="badge bg-secondary">لا توجد روابط</span>
+                    )}
                   </td>
                   <td>
                     <div className="d-flex gap-2">
@@ -463,7 +471,13 @@ export default function SupportProjects() {
                     </div>
                   </td>
                 </tr>
-              ))}
+              )) : (
+                <tr>
+                  <td colSpan="6" className="text-center">
+                    No projects found.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </Table>
         </div>
@@ -495,7 +509,7 @@ export default function SupportProjects() {
               {selectedProject.image && !(selectedProject.image instanceof File) && (
                 <div className="mt-2">
                   <img
-                    src={`https://oneheart.team/uploads/support-projects/${selectedProject.image}`}
+                    src={`http://localhost:3500/uploads/support-projects/${selectedProject.image}`}
                     alt="Current"
                     style={{ height: "100px", objectFit: "contain" }}
                   />
@@ -568,48 +582,6 @@ export default function SupportProjects() {
                     {formErrors.description}
                   </Form.Control.Feedback>
                 </Form.Group>
-
-                {/* English Details */}
-                <div className="border rounded p-3 mb-3">
-                  <h6 className="mb-3">Additional Details</h6>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Details Title</Form.Label>
-                    <Form.Control
-                      type="text"
-                      value={selectedProject.details?.title || ""}
-                      onChange={(e) =>
-                        handleFieldChange('title', e.target.value, true)
-                      }
-                      isValid={touched['details.title'] && !formErrors['details.title']}
-                    />
-                  </Form.Group>
-
-                  <Form.Group className="mb-3">
-                    <Form.Label>Details Description 1</Form.Label>
-                    <Form.Control
-                      as="textarea"
-                      rows={3}
-                      value={selectedProject.details?.description1 || ""}
-                      onChange={(e) =>
-                        handleFieldChange('description1', e.target.value, true)
-                      }
-                      isValid={touched['details.description1'] && !formErrors['details.description1']}
-                    />
-                  </Form.Group>
-
-                  <Form.Group className="mb-3">
-                    <Form.Label>Details Description 2</Form.Label>
-                    <Form.Control
-                      as="textarea"
-                      rows={3}
-                      value={selectedProject.details?.description2 || ""}
-                      onChange={(e) =>
-                        handleFieldChange('description2', e.target.value, true)
-                      }
-                      isValid={touched['details.description2'] && !formErrors['details.description2']}
-                    />
-                  </Form.Group>
-                </div>
               </Tab>
 
               <Tab eventKey="ar" title="Arabic">
@@ -661,81 +633,92 @@ export default function SupportProjects() {
                     {formErrors.descriptionAr}
                   </Form.Control.Feedback>
                 </Form.Group>
-
-                {/* Arabic Details */}
-                <div className="border rounded p-3 mb-3">
-                  <h6 className="mb-3">Additional Details (Arabic)</h6>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Details Title (Arabic)</Form.Label>
-                    <Form.Control
-                      type="text"
-                      value={selectedProject.details?.titleAr || ""}
-                      onChange={(e) =>
-                        handleFieldChange('titleAr', e.target.value, true)
-                      }
-                      isValid={touched['details.titleAr'] && !formErrors['details.titleAr']}
-                    />
-                  </Form.Group>
-
-                  <Form.Group className="mb-3">
-                    <Form.Label>Details Description 1 (Arabic)</Form.Label>
-                    <Form.Control
-                      as="textarea"
-                      rows={3}
-                      value={selectedProject.details?.description1Ar || ""}
-                      onChange={(e) =>
-                        handleFieldChange('description1Ar', e.target.value, true)
-                      }
-                      isValid={touched['details.description1Ar'] && !formErrors['details.description1Ar']}
-                    />
-                  </Form.Group>
-
-                  <Form.Group className="mb-3">
-                    <Form.Label>Details Description 2 (Arabic)</Form.Label>
-                    <Form.Control
-                      as="textarea"
-                      rows={3}
-                      value={selectedProject.details?.description2Ar || ""}
-                      onChange={(e) =>
-                        handleFieldChange('description2Ar', e.target.value, true)
-                      }
-                      isValid={touched['details.description2Ar'] && !formErrors['details.description2Ar']}
-                    />
-                  </Form.Group>
-                </div>
               </Tab>
             </Tabs>
 
-            {/* Details Image */}
-            <Form.Group className="mb-3 mt-3">
-              <Form.Label>Details Image</Form.Label>
-              <Form.Control
-                type="file"
-                onChange={(e) =>
-                  handleFieldChange('image', e.target.files[0], true)
-                }
-              />
-              {selectedProject.details?.image && !(selectedProject.details.image instanceof File) && (
-                <div className="mt-2">
-                  <img
-                    src={`https://oneheart.team/uploads/support-projects/${selectedProject.details.image}`}
-                    alt="Current details"
-                    style={{ height: "100px", objectFit: "contain" }}
-                  />
-                  <p className="text-muted small">Current details image</p>
+            {/* Donation Links Section */}
+            <div className="border rounded p-3 mt-4">
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <h5 className="mb-0">روابط التبرع / Donation Links</h5>
+                <Button
+                  variant="outline-primary"
+                  size="sm"
+                  onClick={addDonationLink}
+                >
+                  إضافة رابط جديد / Add New Link
+                </Button>
+              </div>
+
+              {selectedProject.donationLinks && selectedProject.donationLinks.length > 0 ? (
+                selectedProject.donationLinks.map((link, index) => (
+                  <div key={index} className="card mb-3 p-3">
+                    <div className="d-flex justify-content-end mb-2">
+                      <Button
+                        variant="outline-danger"
+                        size="sm"
+                        onClick={() => removeDonationLink(index)}
+                      >
+                        حذف / Remove
+                      </Button>
+                    </div>
+                    <div className="row g-3">
+                      <div className="col-md-4">
+                        <Form.Group>
+                          <Form.Label>أيقونة طريقة الدفع / Payment Method Icon</Form.Label>
+                          <Form.Control
+                            type="file"
+                            onChange={(e) => {
+                              if (e.target.files[0]) {
+                                updateDonationLink(index, "icon", e.target.files[0]);
+                              }
+                            }}
+                          />
+                          {link.icon && typeof link.icon === "string" && (
+                            <div className="mt-2">
+                              <img
+                                src={`http://localhost:3500/uploads/payment-icons/${link.icon}`}
+                                alt="Payment icon"
+                                style={{ height: "30px", objectFit: "contain" }}
+                              />
+                            </div>
+                          )}
+                        </Form.Group>
+                      </div>
+                      <div className="col-md-4">
+                        <Form.Group>
+                          <Form.Label>اسم طريقة الدفع / Method Name</Form.Label>
+                          <Form.Control
+                            type="text"
+                            value={link.methodName || ""}
+                            onChange={(e) => updateDonationLink(index, "methodName", e.target.value)}
+                            placeholder="e.g., PayPal, Bank Transfer"
+                            required
+                          />
+                        </Form.Group>
+                      </div>
+                      <div className="col-md-4">
+                        <Form.Group>
+                          <Form.Label>رابط الدفع / Payment Link</Form.Label>
+                          <Form.Control
+                            type="text"
+                            value={link.link || ""}
+                            onChange={(e) => updateDonationLink(index, "link", e.target.value)}
+                            placeholder="https://..."
+                            required
+                          />
+                        </Form.Group>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-3 text-muted">
+                  لا توجد روابط للتبرع. انقر على "إضافة رابط جديد" لإضافة طرق الدفع.
+                  <br />
+                  No donation links. Click "Add New Link" to add payment methods.
                 </div>
               )}
-              {selectedProject.details?.image instanceof File && (
-                <div className="mt-2">
-                  <img
-                    src={URL.createObjectURL(selectedProject.details.image)}
-                    alt="Preview details"
-                    style={{ height: "100px", objectFit: "contain" }}
-                  />
-                  <p className="text-muted small">New details image preview</p>
-                </div>
-              )}
-            </Form.Group>
+            </div>
           </Form>
         </Modal.Body>
         <Modal.Footer>
@@ -764,7 +747,7 @@ export default function SupportProjects() {
             <div className="view-project-details">
               <div className="text-center mb-4">
                 <img
-                  src={`https://oneheart.team/uploads/support-projects/${viewProject.image}`}
+                  src={`http://localhost:3500/uploads/support-projects/${viewProject.image}`}
                   alt={viewProject.title}
                   className="img-fluid"
                   style={{ maxHeight: "300px", objectFit: "contain" }}
@@ -789,32 +772,81 @@ export default function SupportProjects() {
                 <p>بالإنجليزية: {viewProject.description}</p>
               </div>
 
-              {/* <div className="mb-4">
-                <h5 className="border-bottom pb-2">المبالغ</h5>
-                <p className="mb-1">المبلغ المطلوب: {viewProject.total}</p>
-                <p>المبلغ المدفوع: {viewProject.paid}</p>
-              </div> */}
+              <h5>التصنيف / Category</h5>
+              <p className="text-muted">{viewProject.categoryAr}</p>
+              <p>{viewProject.category}</p>
 
-              <div className="mb-4">
-                <h5 className="border-bottom pb-2">تفاصيل إضافية</h5>
-                <div className="mb-3">
-                  <h6>العنوان</h6>
-                  <p className="text-muted mb-1">بالعربية: {viewProject.details?.titleAr}</p>
-                  <p>بالإنجليزية: {viewProject.details?.title}</p>
-                </div>
-
-                <div className="mb-3">
-                  <h6>الوصف الأول</h6>
-                  <p className="text-muted mb-1">بالعربية: {viewProject.details?.description1Ar}</p>
-                  <p>بالإنجليزية: {viewProject.details?.description1}</p>
-                </div>
-
-                <div className="mb-3">
-                  <h6>الوصف الثاني</h6>
-                  <p className="text-muted mb-1">بالعربية: {viewProject.details?.description2Ar}</p>
-                  <p>بالإنجليزية: {viewProject.details?.description2}</p>
-                </div>
-              </div>
+              {/* Donation Links Section */}
+              <h5>روابط التبرع / Donation Links</h5>
+              {viewProject.donationLinks ? (
+                typeof viewProject.donationLinks === 'string' ? (
+                  JSON.parse(viewProject.donationLinks).length > 0 ? (
+                    <div className="row">
+                      {JSON.parse(viewProject.donationLinks).map((link, index) => (
+                        <div key={index} className="col-md-4 mb-3">
+                          <div className="card h-100">
+                            <div className="card-body">
+                              {link.icon && (
+                                <div className="text-center mb-2">
+                                  <img
+                                    src={`http://localhost:3500/uploads/payment-icons/${link.icon}`}
+                                    alt={link.methodName}
+                                    style={{ height: "30px", objectFit: "contain" }}
+                                  />
+                                </div>
+                              )}
+                              <h6 className="card-title">{link.methodName}</h6>
+                              <a
+                                href={link.link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn btn-sm btn-outline-primary"
+                              >
+                                فتح الرابط / Open Link
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-muted">لا توجد روابط للتبرع / No donation links available</p>
+                  )
+                ) : Array.isArray(viewProject.donationLinks) && viewProject.donationLinks.length > 0 ? (
+                  <div className="row">
+                    {viewProject.donationLinks.map((link, index) => (
+                      <div key={index} className="col-md-4 mb-3">
+                        <div className="card h-100">
+                          <div className="card-body">
+                            {link.icon && (
+                              <div className="text-center mb-2">
+                                <img
+                                  src={`http://localhost:3500/uploads/payment-icons/${link.icon}`}
+                                  alt={link.methodName}
+                                  style={{ height: "30px", objectFit: "contain" }}
+                                />
+                              </div>
+                            )}
+                            <h6 className="card-title">{link.methodName}</h6>
+                            <a
+                              href={link.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn btn-sm btn-outline-primary"
+                            >
+                              فتح الرابط / Open Link
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted">لا توجد روابط للتبرع / No donation links available</p>
+                )
+              ) : (
+                <p className="text-muted">لا توجد روابط للتبرع / No donation links available</p>
+              )}
             </div>
           )}
         </Modal.Body>

@@ -3,6 +3,7 @@ import axios from "axios";
 import { Modal, Button, Table, Spinner, Form, Tabs, Tab } from "react-bootstrap";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
+import { useSafeApi, ensureArray, safeMap } from "../utils/apiUtils";
 
 export default function DocumentationsPage() {
   const [documentations, setDocumentations] = useState([]);
@@ -13,18 +14,11 @@ export default function DocumentationsPage() {
   const [activeLanguage, setActiveLanguage] = useState('ar');
   const navigate = useNavigate();
 
+  // Initialize the safe API utility with our state setters
+  const api = useSafeApi(setDocumentations, setLoading, "خطأ في جلب بيانات التوثيقات");
+
   const fetchDocumentations = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.get(
-        "https://oneheart.team/api/documentations"
-      );
-      setDocumentations(response.data);
-    } catch (error) {
-      console.error("Error fetching documentations:", error);
-    } finally {
-      setLoading(false);
-    }
+    await api.safeGet('documentations');
   };
 
   useEffect(() => {
@@ -34,7 +28,7 @@ export default function DocumentationsPage() {
   const handleShowModal = (doc = {}, mode = "add") => {
     // Create a deep copy of the doc to avoid modifying the original
     const docCopy = mode === "edit" ? JSON.parse(JSON.stringify(doc)) : {};
-    
+
     // Initialize empty objects for nested properties if they don't exist
     if (mode === "add") {
       docCopy.title = { en: "", ar: "" };
@@ -45,7 +39,7 @@ export default function DocumentationsPage() {
       // For edit mode, ensure we have the hasNewImages flag
       docCopy.hasNewImages = false;
     }
-    
+
     setSelectedDoc(docCopy);
     setModalMode(mode);
     setShowModal(true);
@@ -109,7 +103,7 @@ export default function DocumentationsPage() {
         en: selectedDoc.title?.en?.trim() || '',
         ar: selectedDoc.title?.ar?.trim() || ''
       }));
-      
+
       formData.append('description', JSON.stringify({
         en: selectedDoc.description?.en?.trim() || '',
         ar: selectedDoc.description?.ar?.trim() || ''
@@ -133,63 +127,42 @@ export default function DocumentationsPage() {
         console.log(pair[0], pair[1]);
       }
 
-      try {
-        if (modalMode === "add") {
-          console.log("Creating new documentation");
-          const response = await axios.post("https://oneheart.team/api/documentations", formData, {
-            headers: {
-              'Content-Type': 'multipart/form-data'
-            }
-          });
-          console.log("Create response:", response.data);
-          Swal.fire({
-            icon: "success",
-            title: "تم بنجاح!",
-            text: "تمت إضافة التوثيق بنجاح",
-          });
-        } else {
-          console.log(`Updating documentation ${selectedDoc._id}`);
-          const response = await axios.put(
-            `https://oneheart.team/api/documentations/${selectedDoc._id}`,
-            formData,
-            {
-              headers: {
-                'Content-Type': 'multipart/form-data'
-              }
-            }
-          );
-          console.log("Update response:", response.data);
-          Swal.fire({
-            icon: "success",
-            title: "تم بنجاح!",
-            text: "تم تحديث التوثيق بنجاح",
-          });
+      let response;
+      const config = {
+        headers: {
+          'Content-Type': 'multipart/form-data'
         }
+      };
 
+      if (modalMode === "add") {
+        console.log("Creating new documentation");
+        response = await api.safePost('documentations', formData, config);
+      } else {
+        console.log(`Updating documentation ${selectedDoc._id}`);
+        response = await api.safePut('documentations', selectedDoc._id, formData, config);
+      }
+
+      if (response.success) {
+        Swal.fire({
+          icon: "success",
+          title: "تم بنجاح!",
+          text: modalMode === "add" ? "تمت إضافة التوثيق بنجاح" : "تم تحديث التوثيق بنجاح",
+        });
         fetchDocumentations();
         handleCloseModal();
-      } catch (error) {
-        console.error("Error:", error);
-        console.error("Error response:", error.response?.data);
-        const errorMessage = error.response?.data?.errors?.[0] || 
-                            error.response?.data?.message || 
-                            "حدث خطأ أثناء حفظ التوثيق";
+      } else {
         Swal.fire({
           icon: "error",
           title: "خطأ!",
-          text: errorMessage,
+          text: response.error || "حدث خطأ أثناء حفظ التوثيق",
         });
       }
     } catch (error) {
       console.error("Error:", error);
-      console.error("Error response:", error.response?.data);
-      const errorMessage = error.response?.data?.errors?.[0] || 
-                          error.response?.data?.message || 
-                          "حدث خطأ أثناء حفظ التوثيق";
       Swal.fire({
         icon: "error",
         title: "خطأ!",
-        text: errorMessage,
+        text: error.message || "حدث خطأ أثناء حفظ التوثيق",
       });
     }
   };
@@ -207,12 +180,17 @@ export default function DocumentationsPage() {
     });
 
     if (result.isConfirmed) {
-      try {
-        await axios.delete(`https://oneheart.team/api/documentations/${id}`);
+      const response = await api.safeDelete('documentations', id);
+
+      if (response.success) {
         Swal.fire("تم الحذف!", "تم حذف التوثيق بنجاح.", "success");
         fetchDocumentations();
-      } catch (error) {
-        Swal.fire("خطأ!", "حدث خطأ أثناء الحذف.", "error");
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "خطأ!",
+          text: response.error || "حدث خطأ أثناء حذف التوثيق",
+        });
       }
     }
   };
@@ -226,10 +204,10 @@ export default function DocumentationsPage() {
   };
 
   return (
-    <div className="p-4 bg-light" dir="rtl">
+    <div className="container-fluid p-4" dir="rtl">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1 className="fw-bold">التوثيقات</h1>
-        <Button variant="primary" onClick={() => handleShowModal()}>
+        <h2>التوثيقات</h2>
+        <Button variant="primary" onClick={() => handleShowModal({}, "add")}>
           إضافة توثيق جديد
         </Button>
       </div>
@@ -250,60 +228,72 @@ export default function DocumentationsPage() {
             </tr>
           </thead>
           <tbody>
-            {documentations.map((doc) => (
-              <tr key={doc._id}>
-                <td>
-                  <div className="d-flex gap-2">
-                    {doc.images && doc.images.map((img, index) => (
-                      <img
-                        key={index}
-                        src={`https://oneheart.team/uploads/documentations/${img}`}
-                        alt={`توثيق ${index + 1}`}
-                        style={{
-                          width: "50px",
-                          height: "50px",
-                          objectFit: "cover",
-                        }}
-                      />
-                    ))}
-                  </div>
-                </td>
-                <td>{doc.title?.ar || doc.title}</td>
-                <td>{doc.description?.ar ? doc.description.ar.substring(0, 100) + '...' : ''}</td>
-                <td>
-                  <div className="d-flex gap-2">
-                    <Button
-                      variant="outline-info"
-                      size="sm"
-                      onClick={() => navigateToPhotos(doc._id)}
-                    >
-                      الصور
-                    </Button>
-                    <Button
-                      variant="outline-info"
-                      size="sm"
-                      onClick={() => navigateToVideos(doc._id)}
-                    >
-                      الفيديوهات
-                    </Button>
-                    <Button
-                      variant="outline-primary"
-                      size="sm"
-                      onClick={() => handleShowModal(doc, "edit")}
-                    >
-                      تعديل
-                    </Button>
-                    <Button
-                      variant="outline-danger"
-                      size="sm"
-                      onClick={() => handleDeleteDoc(doc._id)}
-                    >
-                      حذف
-                    </Button>
-                  </div>
+            {safeMap(
+              documentations,
+              (doc) => (
+                <tr key={doc._id}>
+                  <td>
+                    <div className="d-flex gap-2">
+                      {safeMap(
+                        ensureArray(doc.images),
+                        (img, index) => (
+                          <img
+                            key={index}
+                            src={`http://localhost:5000/uploads/documentations/${img}`}
+                            alt={`توثيق ${index + 1}`}
+                            style={{
+                              width: "50px",
+                              height: "50px",
+                              objectFit: "cover",
+                            }}
+                          />
+                        ),
+                        <span className="text-muted">لا توجد صور</span>
+                      )}
+                    </div>
+                  </td>
+                  <td>{doc.title?.ar || doc.title}</td>
+                  <td>{doc.description?.ar ? doc.description.ar.substring(0, 100) + '...' : ''}</td>
+                  <td>
+                    <div className="d-flex gap-2">
+                      <Button
+                        variant="outline-info"
+                        size="sm"
+                        onClick={() => navigateToPhotos(doc._id)}
+                      >
+                        الصور
+                      </Button>
+                      <Button
+                        variant="outline-info"
+                        size="sm"
+                        onClick={() => navigateToVideos(doc._id)}
+                      >
+                        الفيديوهات
+                      </Button>
+                      <Button
+                        variant="outline-primary"
+                        size="sm"
+                        onClick={() => handleShowModal(doc, "edit")}
+                      >
+                        تعديل
+                      </Button>
+                      <Button
+                        variant="outline-danger"
+                        size="sm"
+                        onClick={() => handleDeleteDoc(doc._id)}
+                      >
+                        حذف
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ),
+              <tr>
+                <td colSpan="4" className="text-center">
+                  لا توجد توثيقات متاحة أو حدث خطأ في تحميل البيانات.
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </Table>
       )}
@@ -325,7 +315,7 @@ export default function DocumentationsPage() {
                     {selectedDoc.images.map((img, index) => (
                       <img
                         key={index}
-                        src={`https://oneheart.team/uploads/documentations/${img}`}
+                        src={`http://localhost:5000/uploads/documentations/${img}`}
                         alt={`توثيق ${index + 1}`}
                         style={{
                           width: "80px",

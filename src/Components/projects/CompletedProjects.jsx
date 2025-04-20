@@ -6,7 +6,22 @@ import Swal from 'sweetalert2';
 export default function CompletedProjects() {
   const [projects, setProjects] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [selectedProject, setSelectedProject] = useState({});
+  const [selectedProject, setSelectedProject] = useState({
+    title: "",
+    titleAr: "",
+    category: "",
+    categoryAr: "",
+    fund: "",
+    fundAr: "",
+    location: "",
+    locationAr: "",
+    duration: "",
+    durationAr: "",
+    Beneficiary: "",
+    BeneficiaryAr: "",
+    image: null,
+    donationLinks: []
+  });
   const [modalMode, setModalMode] = useState("add");
   const [loading, setLoading] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
@@ -17,7 +32,7 @@ export default function CompletedProjects() {
     setLoading(true);
     try {
       const response = await axios.get(
-        "https://oneheart.team/api/completed-projects"
+        "http://localhost:3500/api/completed-projects"
       );
       setProjects(response.data);
     } catch (error) {
@@ -33,6 +48,20 @@ export default function CompletedProjects() {
 
   const handleShowModal = (project = {}, mode = "add") => {
     if (mode === "edit" && project.details && project.details[0]) {
+      // Parse donation links if they exist
+      let parsedDonationLinks = [];
+      if (project.donationLinks) {
+        if (typeof project.donationLinks === 'string') {
+          try {
+            parsedDonationLinks = JSON.parse(project.donationLinks);
+          } catch (error) {
+            console.error("Error parsing donation links:", error);
+          }
+        } else if (Array.isArray(project.donationLinks)) {
+          parsedDonationLinks = project.donationLinks;
+        }
+      }
+
       setSelectedProject({
         ...project,
         fund: project.details[0].fund || "",
@@ -46,7 +75,8 @@ export default function CompletedProjects() {
         title: project.title || "",
         titleAr: project.titleAr || "",
         category: project.category || "",
-        categoryAr: project.categoryAr || ""
+        categoryAr: project.categoryAr || "",
+        donationLinks: parsedDonationLinks
       });
     } else {
       // Initialize with empty values for add mode
@@ -63,7 +93,8 @@ export default function CompletedProjects() {
         durationAr: "",
         Beneficiary: "",
         BeneficiaryAr: "",
-        image: null
+        image: null,
+        donationLinks: []
       });
     }
     setModalMode(mode);
@@ -85,7 +116,8 @@ export default function CompletedProjects() {
       durationAr: "",
       Beneficiary: "",
       BeneficiaryAr: "",
-      image: null
+      image: null,
+      donationLinks: []
     });
   };
 
@@ -161,14 +193,50 @@ export default function CompletedProjects() {
       // Append details as JSON string
       formData.append("details", JSON.stringify(details));
 
+      // Handle donation links
+      if (selectedProject.donationLinks && selectedProject.donationLinks.length > 0) {
+        // Filter out incomplete donation links
+        const validLinks = selectedProject.donationLinks.filter(
+          link => link.methodName && link.link
+        );
+
+        if (validLinks.length > 0) {
+          // Create a clean version of the links for JSON (without File objects)
+          const cleanLinks = validLinks.map((link, index) => {
+            // If the icon is a File object, we'll upload it separately
+            if (link.icon instanceof File) {
+              // Append the file to formData with a unique name
+              formData.append(`donationIcon_${index}`, link.icon);
+
+              // Return link without icon (backend will connect them)
+              return {
+                methodName: link.methodName,
+                link: link.link,
+                iconIndex: index // Add index to associate with the uploaded file
+              };
+            } else {
+              // Keep the existing icon string
+              return {
+                methodName: link.methodName,
+                link: link.link,
+                icon: link.icon
+              };
+            }
+          });
+
+          // Add the sanitized links to formData
+          formData.append("donationLinks", JSON.stringify(cleanLinks));
+        }
+      }
+
       // Log all form data
       for (let pair of formData.entries()) {
         console.log('Form data:', pair[0], pair[1]);
       }
 
-      const url = modalMode === "add" 
-        ? "https://oneheart.team/api/completed-projects"
-        : `https://oneheart.team/api/completed-projects/${selectedProject._id}`;
+      const url = modalMode === "add"
+        ? "http://localhost:3500/api/completed-projects"
+        : `http://localhost:3500/api/completed-projects/${selectedProject._id}`;
 
       const response = await axios({
         method: modalMode === "add" ? "post" : "put",
@@ -217,7 +285,7 @@ export default function CompletedProjects() {
       setLoading(true);
       try {
         await axios.delete(
-          `https://oneheart.team/api/completed-projects/${id}`
+          `http://localhost:3500/api/completed-projects/${id}`
         );
         await Swal.fire({
           title: 'تم الحذف!',
@@ -250,6 +318,40 @@ export default function CompletedProjects() {
     setViewProject(null);
   };
 
+  // Function to add a new donation link
+  const addDonationLink = () => {
+    setSelectedProject({
+      ...selectedProject,
+      donationLinks: [
+        ...(selectedProject.donationLinks || []),
+        { methodName: "", link: "", icon: null }
+      ]
+    });
+  };
+
+  // Function to remove a donation link
+  const removeDonationLink = (index) => {
+    const updatedLinks = [...(selectedProject.donationLinks || [])];
+    updatedLinks.splice(index, 1);
+    setSelectedProject({
+      ...selectedProject,
+      donationLinks: updatedLinks
+    });
+  };
+
+  // Function to update a donation link
+  const updateDonationLink = (index, field, value) => {
+    const updatedLinks = [...(selectedProject.donationLinks || [])];
+    updatedLinks[index] = {
+      ...updatedLinks[index],
+      [field]: value
+    };
+    setSelectedProject({
+      ...selectedProject,
+      donationLinks: updatedLinks
+    });
+  };
+
   return (
     <div className="p-4 bg-light " dir="rtl">
       <div className="d-flex justify-content-between align-items-center mb-4">
@@ -271,49 +373,43 @@ export default function CompletedProjects() {
               <tr>
                 <th>الصورة</th>
                 <th>العنوان</th>
-                <th>التصنيف</th>
-                <th>التفاصيل</th>
+                <th>الوصف</th>
+                <th>روابط التبرع</th>
                 <th>الإجراءات</th>
               </tr>
             </thead>
             <tbody>
-              {projects.map((project) => (
+              {Array.isArray(projects) ? projects.map((project) => (
                 <tr key={project._id}>
                   <td>
                     <img
-                      src={`https://oneheart.team/uploads/completed-projects/${project.image}`}
+                      src={`http://localhost:3500/uploads/completed-projects/${project.image}`}
                       alt={project.title}
-                      style={{
-                        width: "60px",
-                        height: "60px",
-                        objectFit: "cover",
-                        borderRadius: "4px"
-                      }}
+                      style={{ width: "50px", height: "50px", objectFit: "cover" }}
                     />
                   </td>
+                  <td>{project.title}</td>
                   <td>
-                    <div className="mb-1">{project.titleAr}</div>
-                    <small className="text-muted">{project.title}</small>
+                    {project.description && project.description.length > 50
+                      ? `${project.description.substring(0, 50)}...`
+                      : project.description}
                   </td>
                   <td>
-                    <div className="mb-1">{project.categoryAr}</div>
-                    <small className="text-muted">{project.category}</small>
-                  </td>
-                  <td>
-                    <div className="small">
-                      <div className="mb-1">
-                        <strong>التمويل:</strong> {project.details[0].fundAr}
-                      </div>
-                      <div className="mb-1">
-                        <strong>الموقع:</strong> {project.details[0].locationAr}
-                      </div>
-                      <div className="mb-1">
-                        <strong>المدة:</strong> {project.details[0].durationAr}
-                      </div>
-                      <div>
-                        <strong>المستفيدون:</strong> {project.details[0].BeneficiaryAr}
-                      </div>
-                    </div>
+                    {project.donationLinks ? (
+                      typeof project.donationLinks === 'string' ? (
+                        JSON.parse(project.donationLinks).length > 0 ? (
+                          <span className="badge bg-success">{JSON.parse(project.donationLinks).length} روابط</span>
+                        ) : (
+                          <span className="badge bg-secondary">لا توجد روابط</span>
+                        )
+                      ) : Array.isArray(project.donationLinks) && project.donationLinks.length > 0 ? (
+                        <span className="badge bg-success">{project.donationLinks.length} روابط</span>
+                      ) : (
+                        <span className="badge bg-secondary">لا توجد روابط</span>
+                      )
+                    ) : (
+                      <span className="badge bg-secondary">لا توجد روابط</span>
+                    )}
                   </td>
                   <td>
                     <div className="d-flex gap-2">
@@ -341,7 +437,13 @@ export default function CompletedProjects() {
                     </div>
                   </td>
                 </tr>
-              ))}
+              )) : (
+                <tr>
+                  <td colSpan="5" className="text-center">
+                    No projects found.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </Table>
         </div>
@@ -555,7 +657,89 @@ export default function CompletedProjects() {
               </Tab>
             </Tabs>
 
-            
+            {/* Donation Links Section */}
+            <div className="border rounded p-3 mt-4">
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <h5 className="mb-0">روابط التبرع / Donation Links</h5>
+                <Button
+                  variant="outline-primary"
+                  size="sm"
+                  onClick={addDonationLink}
+                >
+                  إضافة رابط جديد / Add New Link
+                </Button>
+              </div>
+
+              {selectedProject.donationLinks && selectedProject.donationLinks.length > 0 ? (
+                selectedProject.donationLinks.map((link, index) => (
+                  <div key={index} className="card mb-3 p-3">
+                    <div className="d-flex justify-content-end mb-2">
+                      <Button
+                        variant="outline-danger"
+                        size="sm"
+                        onClick={() => removeDonationLink(index)}
+                      >
+                        حذف / Remove
+                      </Button>
+                    </div>
+                    <div className="row g-3">
+                      <div className="col-md-4">
+                        <Form.Group>
+                          <Form.Label>أيقونة طريقة الدفع / Payment Method Icon</Form.Label>
+                          <Form.Control
+                            type="file"
+                            onChange={(e) => {
+                              if (e.target.files[0]) {
+                                updateDonationLink(index, "icon", e.target.files[0]);
+                              }
+                            }}
+                          />
+                          {link.icon && typeof link.icon === "string" && (
+                            <div className="mt-2">
+                              <img
+                                src={`http://localhost:3500/uploads/payment-icons/${link.icon}`}
+                                alt="Payment icon"
+                                style={{ height: "30px", objectFit: "contain" }}
+                              />
+                            </div>
+                          )}
+                        </Form.Group>
+                      </div>
+                      <div className="col-md-4">
+                        <Form.Group>
+                          <Form.Label>اسم طريقة الدفع / Method Name</Form.Label>
+                          <Form.Control
+                            type="text"
+                            value={link.methodName || ""}
+                            onChange={(e) => updateDonationLink(index, "methodName", e.target.value)}
+                            placeholder="e.g., PayPal, Bank Transfer"
+                            required
+                          />
+                        </Form.Group>
+                      </div>
+                      <div className="col-md-4">
+                        <Form.Group>
+                          <Form.Label>رابط الدفع / Payment Link</Form.Label>
+                          <Form.Control
+                            type="text"
+                            value={link.link || ""}
+                            onChange={(e) => updateDonationLink(index, "link", e.target.value)}
+                            placeholder="https://..."
+                            required
+                          />
+                        </Form.Group>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-3 text-muted">
+                  لا توجد روابط للتبرع. انقر على "إضافة رابط جديد" لإضافة طرق الدفع.
+                  <br />
+                  No donation links. Click "Add New Link" to add payment methods.
+                </div>
+              )}
+            </div>
           </Form>
         </Modal.Body>
         <Modal.Footer>
@@ -578,7 +762,7 @@ export default function CompletedProjects() {
             <div className="view-project-details">
               <div className="text-center mb-4">
                 <img
-                  src={`https://oneheart.team/uploads/completed-projects/${viewProject.image}`}
+                  src={`http://localhost:3500/uploads/completed-projects/${viewProject.image}`}
                   alt={viewProject.title}
                   className="img-fluid"
                   style={{ maxHeight: "300px", objectFit: "contain" }}

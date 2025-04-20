@@ -14,7 +14,7 @@ const UsersPage = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const response = await axios.get("https://oneheart.team/api/users", {
+      const response = await axios.get("http://localhost:3500/api/users", {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
@@ -75,7 +75,7 @@ const UsersPage = () => {
       if (modalMode === "add") {
         // Create new user
         await axios.post(
-          "https://oneheart.team/api/users",
+          "http://localhost:3500/api/users",
           selectedUser,
           {
             headers: {
@@ -94,9 +94,9 @@ const UsersPage = () => {
         if (!userData.password) {
           delete userData.password; // Don't send empty password
         }
-        
+
         await axios.put(
-          `https://oneheart.team/api/users/${selectedUser._id}`,
+          `http://localhost:3500/api/users/${selectedUser._id}`,
           userData,
           {
             headers: {
@@ -139,7 +139,7 @@ const UsersPage = () => {
       if (result.isConfirmed) {
         setLoading(true);
         try {
-          await axios.delete(`https://oneheart.team/api/users/${id}`, {
+          await axios.delete(`http://localhost:3500/api/users/${id}`, {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
             },
