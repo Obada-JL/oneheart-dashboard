@@ -18,7 +18,7 @@ export default function CurrentProjects() {
     setLoading(true);
     try {
       const response = await axios.get(
-        "http://localhost:3500/api/current-projects"
+        "https://oneheart.team/api/current-projects"
       );
       setProjects(response.data);
     } catch (error) {
@@ -210,8 +210,8 @@ export default function CurrentProjects() {
 
       const url =
         modalMode === "add"
-          ? "http://localhost:3500/api/current-projects"
-          : `http://localhost:3500/api/current-projects/${selectedProject._id}`;
+          ? "https://oneheart.team/api/current-projects"
+          : `https://oneheart.team/api/current-projects/${selectedProject._id}`;
 
       const method = modalMode === "add" ? "post" : "put";
 
@@ -256,7 +256,7 @@ export default function CurrentProjects() {
     if (result.isConfirmed) {
       setLoading(true);
       try {
-        await axios.delete(`http://localhost:3500/api/current-projects/${id}`);
+        await axios.delete(`https://oneheart.team/api/current-projects/${id}`);
         await Swal.fire({
           title: 'تم الحذف!',
           text: 'تم حذف المشروع بنجاح.',
@@ -320,7 +320,7 @@ export default function CurrentProjects() {
                 <tr key={project._id}>
                   <td>
                     <img
-                      src={`http://localhost:3500/uploads/current-projects/${project.image}`}
+                      src={`https://oneheart.team/uploads/current-projects/${project.image}`}
                       alt={project.title}
                       style={{ width: "50px", height: "50px", objectFit: "cover" }}
                     />
@@ -409,7 +409,7 @@ export default function CurrentProjects() {
               {selectedProject.image && typeof selectedProject.image === "string" && (
                 <div className="mt-2">
                   <img
-                    src={`http://localhost:3500/uploads/current-projects/${selectedProject.image}`}
+                    src={`https://oneheart.team/uploads/current-projects/${selectedProject.image}`}
                     alt="Current main"
                     style={{ height: "100px", objectFit: "contain" }}
                   />
@@ -560,7 +560,7 @@ export default function CurrentProjects() {
                           {link.icon && typeof link.icon === "string" && (
                             <div className="mt-2">
                               <img
-                                src={`http://localhost:3500/uploads/payment-icons/${link.icon}`}
+                                src={`https://oneheart.team/uploads/payment-icons/${link.icon}`}
                                 alt="Payment icon"
                                 style={{ height: "30px", objectFit: "contain" }}
                               />
@@ -635,7 +635,7 @@ export default function CurrentProjects() {
             <div className="view-project-details">
               <div className="text-center mb-4">
                 <img
-                  src={`http://localhost:3500/uploads/current-projects/${viewProject.image}`}
+                  src={`https://oneheart.team/uploads/current-projects/${viewProject.image}`}
                   alt={viewProject.title}
                   className="img-fluid"
                   style={{ maxHeight: "300px", objectFit: "contain" }}
@@ -670,7 +670,7 @@ export default function CurrentProjects() {
                           <div className="d-flex align-items-center mb-2">
                             {link.icon && (
                               <img
-                                src={`http://localhost:3500/uploads/payment-icons/${link.icon}`}
+                                src={`https://oneheart.team/uploads/payment-icons/${link.icon}`}
                                 alt={link.methodName}
                                 className="me-2"
                                 style={{ height: "30px", width: "auto" }}

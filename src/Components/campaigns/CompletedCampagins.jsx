@@ -223,8 +223,8 @@ export default function CompletedCampaigns() {
       formData.append("details", JSON.stringify([details]));
 
       const url = modalMode === "add"
-        ? "http://localhost:3500/api/completed-campaigns"
-        : `http://localhost:3500/api/completed-campaigns/${selectedCampaign._id}`;
+        ? "https://oneheart.team/api/completed-campaigns"
+        : `https://oneheart.team/api/completed-campaigns/${selectedCampaign._id}`;
 
       const response = await axios({
         method: modalMode === "add" ? "post" : "put",
@@ -272,7 +272,7 @@ export default function CompletedCampaigns() {
       if (result.isConfirmed) {
         setLoading(true);
 
-        const response = await axios.delete(`http://localhost:3500/api/completed-campaigns/${id}`);
+        const response = await axios.delete(`https://oneheart.team/api/completed-campaigns/${id}`);
 
         if (response.status === 200) {
           Swal.fire({
@@ -341,7 +341,7 @@ export default function CompletedCampaigns() {
                   <tr key={campaign._id}>
                     <td>
                       <img
-                        src={`http://localhost:3500/uploads/completed-campaigns/${campaign.image}`}
+                        src={`https://oneheart.team/uploads/completed-campaigns/${campaign.image}`}
                         alt={campaign.title}
                         style={{ width: "100px", height: "60px", objectFit: "cover" }}
                       />
@@ -428,7 +428,7 @@ export default function CompletedCampaigns() {
                 <div className="mt-2">
                   <small className="text-muted">الصورة الحالية:</small>
                   <img
-                    src={`http://localhost:3500/uploads/completed-campaigns/${selectedCampaign.image}`}
+                    src={`https://oneheart.team/uploads/completed-campaigns/${selectedCampaign.image}`}
                     alt="Current"
                     style={{ width: "100px", height: "60px", objectFit: "cover", display: "block", marginTop: "8px" }}
                   />
@@ -651,7 +651,7 @@ export default function CompletedCampaigns() {
             <div className="view-campaign-details">
               <div className="text-center mb-4">
                 <img
-                  src={`http://localhost:3500/uploads/completed-campaigns/${viewCampaign.image}`}
+                  src={`https://oneheart.team/uploads/completed-campaigns/${viewCampaign.image}`}
                   alt={viewCampaign.title}
                   className="img-fluid"
                   style={{ maxHeight: "300px", objectFit: "contain" }}

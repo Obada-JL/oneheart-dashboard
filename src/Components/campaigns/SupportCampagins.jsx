@@ -20,7 +20,7 @@ export default function SupportCampaigns() {
     setLoading(true);
     try {
       const response = await axios.get(
-        "http://localhost:3500/api/support-campaigns"
+        "https://oneheart.team/api/support-campaigns"
       );
 
       // Ensure campaigns is always an array
@@ -249,8 +249,8 @@ export default function SupportCampaigns() {
 
       // Submit the form
       const url = modalMode === 'add'
-        ? 'http://localhost:3500/api/support-campaigns'
-        : `http://localhost:3500/api/support-campaigns/${selectedCampaign._id}`;
+        ? 'https://oneheart.team/api/support-campaigns'
+        : `https://oneheart.team/api/support-campaigns/${selectedCampaign._id}`;
 
       const response = await axios({
         method: modalMode === 'add' ? 'post' : 'put',
@@ -296,7 +296,7 @@ export default function SupportCampaigns() {
       });
 
       if (result.isConfirmed) {
-        await axios.delete(`http://localhost:3500/api/support-campaigns/${id}`);
+        await axios.delete(`https://oneheart.team/api/support-campaigns/${id}`);
 
         await Swal.fire({
           title: 'تم الحذف!',
@@ -386,7 +386,7 @@ export default function SupportCampaigns() {
                   <tr key={campaign._id}>
                     <td>
                       <img
-                        src={`http://localhost:3500/uploads/support-campaigns/${campaign.image}`}
+                        src={`https://oneheart.team/uploads/support-campaigns/${campaign.image}`}
                         alt={campaign.title}
                         style={{ width: "100px", height: "60px", objectFit: "cover" }}
                       />
@@ -698,7 +698,7 @@ export default function SupportCampaigns() {
             <div className="view-campaign-details">
               <div className="text-center mb-4">
                 <img
-                  src={`http://localhost:3500/uploads/support-campaigns/${viewCampaign.image}`}
+                  src={`https://oneheart.team/uploads/support-campaigns/${viewCampaign.image}`}
                   alt={viewCampaign.title}
                   className="img-fluid"
                   style={{ maxHeight: "300px", objectFit: "contain" }}

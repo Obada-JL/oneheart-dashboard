@@ -54,7 +54,7 @@ const ProfilePage = () => {
       }
 
       // If we couldn't get from stored user, try API
-      const response = await axios.get(`http://localhost:3500/api/users/${userId}`, {
+      const response = await axios.get(`https://oneheart.team/api/users/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -141,7 +141,7 @@ const ProfilePage = () => {
       }
 
       await axios.put(
-        `http://localhost:3500/api/users/${userId}`,
+        `https://oneheart.team/api/users/${userId}`,
         updateData,
         {
           headers: { Authorization: `Bearer ${token}` },

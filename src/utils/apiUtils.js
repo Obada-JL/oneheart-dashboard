@@ -1,7 +1,7 @@
 import axios from 'axios';
 import Swal from 'sweetalert2';
 
-const API_BASE_URL = 'http://localhost:3500/api';
+const API_BASE_URL = 'https://oneheart.team/api';
 
 /**
  * Create a safe API wrapper to ensure data is always in the expected format

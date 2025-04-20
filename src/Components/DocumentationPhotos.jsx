@@ -13,7 +13,7 @@ export default function DocumentationPhotos() {
     try {
       setLoading(true);
       const response = await axios.get(
-        `http://localhost:3500/api/photos/${docId}`
+        `https://oneheart.team/api/photos/${docId}`
       );
       setPhotos(response.data);
     } catch (error) {
@@ -40,7 +40,7 @@ export default function DocumentationPhotos() {
 
     try {
       setLoading(true);
-      await axios.post("http://localhost:3500/api/photos", formData, {
+      await axios.post("https://oneheart.team/api/photos", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       Swal.fire("تم!", "تم رفع الصور بنجاح", "success");
@@ -67,7 +67,7 @@ export default function DocumentationPhotos() {
 
     if (result.isConfirmed) {
       try {
-        await axios.delete(`http://localhost:3500/api/photos/${photoId}`);
+        await axios.delete(`https://oneheart.team/api/photos/${photoId}`);
         fetchPhotos();
         Swal.fire("تم الحذف!", "تم حذف الصورة بنجاح.", "success");
       } catch (error) {
@@ -108,7 +108,7 @@ export default function DocumentationPhotos() {
               <Card>
                 <Card.Img
                   variant="top"
-                  src={`http://localhost:3500/uploads/documentation/${photo.image}`}
+                  src={`https://oneheart.team/uploads/documentation/${photo.image}`}
                   style={{ height: "200px", objectFit: "cover" }}
                 />
                 <Card.Body className="text-center">

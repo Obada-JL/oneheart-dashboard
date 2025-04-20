@@ -23,7 +23,7 @@ function MyComponent() {
   );
   
   const fetchData = async () => {
-    // Endpoint is relative to API_BASE_URL (http://localhost:3500/api)
+    // Endpoint is relative to API_BASE_URL (https://oneheart.team/api)
     await api.safeGet('my-endpoint');
     // This will automatically set loading state and handle errors
   };

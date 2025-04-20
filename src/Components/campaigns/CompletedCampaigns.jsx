@@ -150,8 +150,8 @@ const CompletedCampaigns = () => {
 
             const url =
                 modalMode === "add"
-                    ? "http://localhost:3500/api/completed-campaigns"
-                    : `http://localhost:3500/api/completed-campaigns/${selectedCampaign._id}`;
+                    ? "https://oneheart.team/api/completed-campaigns"
+                    : `https://oneheart.team/api/completed-campaigns/${selectedCampaign._id}`;
 
             const method = modalMode === "add" ? "post" : "put";
 

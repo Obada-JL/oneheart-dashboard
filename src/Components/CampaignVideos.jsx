@@ -15,7 +15,7 @@ export default function CampaignVideos() {
   const fetchCampaignVideos = async () => {
     try {
       setLoading(true);
-      const response = await axios.get("http://localhost:3500/api/campaign-videos");
+      const response = await axios.get("https://oneheart.team/api/campaign-videos");
       setVideos(response.data);
     } catch (error) {
       console.error("Error fetching campaign videos:", error);
@@ -55,7 +55,7 @@ export default function CampaignVideos() {
 
     try {
       setUploadingVideo(true);
-      await axios.post("http://localhost:3500/api/campaign-videos", formData, {
+      await axios.post("https://oneheart.team/api/campaign-videos", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       Swal.fire("تم!", "تم رفع الفيديو بنجاح", "success");
@@ -89,7 +89,7 @@ export default function CampaignVideos() {
       if (result.isConfirmed) {
         try {
           setLoading(true);
-          await axios.delete(`http://localhost:3500/api/campaign-videos/${id}`);
+          await axios.delete(`https://oneheart.team/api/campaign-videos/${id}`);
           Swal.fire("تم الحذف!", "تم حذف الفيديو بنجاح.", "success");
           fetchCampaignVideos();
         } catch (error) {
@@ -216,10 +216,10 @@ export default function CampaignVideos() {
                         controls
                         className="card-img-top"
                         style={{ height: "300px", objectFit: "cover" }}
-                        poster={`http://localhost:3500/uploads/campaign-thumbnails/${video.thumbnail}`}
+                        poster={`https://oneheart.team/uploads/campaign-thumbnails/${video.thumbnail}`}
                       >
                         <source
-                          src={`http://localhost:3500/uploads/campaign-videos/${video.video}`}
+                          src={`https://oneheart.team/uploads/campaign-videos/${video.video}`}
                           type="video/mp4"
                         />
                         Your browser does not support the video tag.

@@ -150,8 +150,8 @@ const SupportCampaigns = () => {
 
             const url =
                 modalMode === "add"
-                    ? "http://localhost:3500/api/support-campaigns"
-                    : `http://localhost:3500/api/support-campaigns/${selectedCampaign._id}`;
+                    ? "https://oneheart.team/api/support-campaigns"
+                    : `https://oneheart.team/api/support-campaigns/${selectedCampaign._id}`;
 
             const method = modalMode === "add" ? "post" : "put";
 

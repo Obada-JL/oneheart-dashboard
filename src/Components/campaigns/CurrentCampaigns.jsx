@@ -358,7 +358,7 @@ export default function CurrentCampaigns() {
       ...campaign,
       donationLinks: parsedDonationLinks,
       imagePreview: campaign.image
-        ? `http://localhost:3500/uploads/campaigns/${campaign.image}`
+        ? `https://oneheart.team/uploads/campaigns/${campaign.image}`
         : null,
     });
     setModalMode("update");
@@ -406,7 +406,7 @@ export default function CurrentCampaigns() {
                   <tr key={campaign._id}>
                     <td>
                       <img
-                        src={`http://localhost:3500/uploads/current-campaigns/${campaign.image}`}
+                        src={`https://oneheart.team/uploads/current-campaigns/${campaign.image}`}
                         alt={campaign.title}
                         style={{ width: "100px", height: "60px", objectFit: "cover" }}
                       />
@@ -513,7 +513,7 @@ export default function CurrentCampaigns() {
                     {selectedCampaign.image && !(selectedCampaign.image instanceof File) && (
                       <div className="mt-2">
                         <img
-                          src={`http://localhost:3500/uploads/campaigns/${selectedCampaign.image}`}
+                          src={`https://oneheart.team/uploads/campaigns/${selectedCampaign.image}`}
                           alt="Current main"
                           style={{ width: "100px", height: "60px", objectFit: "cover" }}
                         />
@@ -655,7 +655,7 @@ export default function CurrentCampaigns() {
                           {link.icon && typeof link.icon === "string" && (
                             <div className="mt-2">
                               <img
-                                src={`http://localhost:3500/uploads/payment-icons/${link.icon}`}
+                                src={`https://oneheart.team/uploads/payment-icons/${link.icon}`}
                                 alt="Payment icon"
                                 style={{ height: "30px", objectFit: "contain" }}
                               />
@@ -727,7 +727,7 @@ export default function CurrentCampaigns() {
             <div className="view-campaign-details">
               <div className="text-center mb-4">
                 <img
-                  src={`http://localhost:3500/uploads/campaigns/${viewCampaign.image}`}
+                  src={`https://oneheart.team/uploads/campaigns/${viewCampaign.image}`}
                   alt={viewCampaign.title}
                   className="img-fluid"
                   style={{ maxHeight: "300px", objectFit: "contain" }}

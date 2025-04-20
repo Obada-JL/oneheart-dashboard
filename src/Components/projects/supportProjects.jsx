@@ -29,7 +29,7 @@ export default function SupportProjects() {
     setLoading(true);
     try {
       const response = await axios.get(
-        "http://localhost:3500/api/support-projects"
+        "https://oneheart.team/api/support-projects"
       );
       setProjects(response.data);
     } catch (error) {
@@ -256,8 +256,8 @@ export default function SupportProjects() {
 
       const url =
         modalMode === "add"
-          ? "http://localhost:3500/api/support-projects"
-          : `http://localhost:3500/api/support-projects/${selectedProject._id}`;
+          ? "https://oneheart.team/api/support-projects"
+          : `https://oneheart.team/api/support-projects/${selectedProject._id}`;
 
       const method = modalMode === "add" ? "post" : "put";
 
@@ -302,7 +302,7 @@ export default function SupportProjects() {
     if (result.isConfirmed) {
       setLoading(true);
       try {
-        await axios.delete(`http://localhost:3500/api/support-projects/${id}`);
+        await axios.delete(`https://oneheart.team/api/support-projects/${id}`);
         await Swal.fire({
           title: 'تم الحذف!',
           text: 'تم حذف المشروع بنجاح.',
@@ -401,7 +401,7 @@ export default function SupportProjects() {
                 <tr key={project._id}>
                   <td>
                     <img
-                      src={`http://localhost:3500/uploads/support-projects/${project.image}`}
+                      src={`https://oneheart.team/uploads/support-projects/${project.image}`}
                       alt={project.title}
                       style={{
                         width: "50px",
@@ -509,7 +509,7 @@ export default function SupportProjects() {
               {selectedProject.image && !(selectedProject.image instanceof File) && (
                 <div className="mt-2">
                   <img
-                    src={`http://localhost:3500/uploads/support-projects/${selectedProject.image}`}
+                    src={`https://oneheart.team/uploads/support-projects/${selectedProject.image}`}
                     alt="Current"
                     style={{ height: "100px", objectFit: "contain" }}
                   />
@@ -676,7 +676,7 @@ export default function SupportProjects() {
                           {link.icon && typeof link.icon === "string" && (
                             <div className="mt-2">
                               <img
-                                src={`http://localhost:3500/uploads/payment-icons/${link.icon}`}
+                                src={`https://oneheart.team/uploads/payment-icons/${link.icon}`}
                                 alt="Payment icon"
                                 style={{ height: "30px", objectFit: "contain" }}
                               />
@@ -747,7 +747,7 @@ export default function SupportProjects() {
             <div className="view-project-details">
               <div className="text-center mb-4">
                 <img
-                  src={`http://localhost:3500/uploads/support-projects/${viewProject.image}`}
+                  src={`https://oneheart.team/uploads/support-projects/${viewProject.image}`}
                   alt={viewProject.title}
                   className="img-fluid"
                   style={{ maxHeight: "300px", objectFit: "contain" }}
@@ -789,7 +789,7 @@ export default function SupportProjects() {
                               {link.icon && (
                                 <div className="text-center mb-2">
                                   <img
-                                    src={`http://localhost:3500/uploads/payment-icons/${link.icon}`}
+                                    src={`https://oneheart.team/uploads/payment-icons/${link.icon}`}
                                     alt={link.methodName}
                                     style={{ height: "30px", objectFit: "contain" }}
                                   />
@@ -821,7 +821,7 @@ export default function SupportProjects() {
                             {link.icon && (
                               <div className="text-center mb-2">
                                 <img
-                                  src={`http://localhost:3500/uploads/payment-icons/${link.icon}`}
+                                  src={`https://oneheart.team/uploads/payment-icons/${link.icon}`}
                                   alt={link.methodName}
                                   style={{ height: "30px", objectFit: "contain" }}
                                 />

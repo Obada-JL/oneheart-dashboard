@@ -41,7 +41,7 @@ export default function SponsorshipsPage() {
     setError(null);
     try {
       const response = await axios.get(
-        "http://localhost:3500/api/sponsorships"
+        "https://oneheart.team/api/sponsorships"
       );
 
       // Ensure we're setting an array to state
@@ -401,8 +401,8 @@ export default function SponsorshipsPage() {
 
       // Submit the form
       const url = modalMode === 'add'
-        ? 'http://localhost:3500/api/sponsorships'
-        : `http://localhost:3500/api/sponsorships/${selectedSponsorship._id}`;
+        ? 'https://oneheart.team/api/sponsorships'
+        : `https://oneheart.team/api/sponsorships/${selectedSponsorship._id}`;
 
       const response = await axios({
         method: modalMode === 'add' ? 'post' : 'put',
@@ -470,7 +470,7 @@ export default function SponsorshipsPage() {
       if (result.isConfirmed) {
         setLoading(true);
 
-        const response = await axios.delete(`http://localhost:3500/api/sponsorships/${id}`);
+        const response = await axios.delete(`https://oneheart.team/api/sponsorships/${id}`);
 
         if (response.status === 200) {
           await Swal.fire({
@@ -524,7 +524,7 @@ export default function SponsorshipsPage() {
                     {link.icon ? (
                       <div className="icon-container me-2" style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <img
-                          src={link.icon.startsWith('http') ? link.icon : `http://localhost:3500/uploads/payment-icons/${link.icon}`}
+                          src={link.icon.startsWith('http') ? link.icon : `https://oneheart.team/uploads/payment-icons/${link.icon}`}
                           alt={link.methodName}
                           style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
                           onError={(e) => {
@@ -631,7 +631,7 @@ export default function SponsorshipsPage() {
                   <tr key={sponsorship._id}>
                     <td>
                       <img
-                        src={`http://localhost:3500/uploads/sponsorships/${sponsorship.sponsorshipImage}`}
+                        src={`https://oneheart.team/uploads/sponsorships/${sponsorship.sponsorshipImage}`}
                         alt={sponsorship.title}
                         style={{ width: "100px", height: "60px", objectFit: "cover" }}
                       />
@@ -733,7 +733,7 @@ export default function SponsorshipsPage() {
               {modalMode === "edit" && selectedSponsorship.sponsorshipImage && typeof selectedSponsorship.sponsorshipImage === 'string' && (
                 <div className="mt-2">
                   <img
-                    src={`http://localhost:3500/uploads/sponsorships/${selectedSponsorship.sponsorshipImage}`}
+                    src={`https://oneheart.team/uploads/sponsorships/${selectedSponsorship.sponsorshipImage}`}
                     alt="Current main"
                     style={{ width: "100px", height: "60px", objectFit: "cover" }}
                   />
@@ -997,7 +997,7 @@ export default function SponsorshipsPage() {
             <div className="view-sponsorship-details">
               <div className="text-center mb-4">
                 <img
-                  src={`http://localhost:3500/uploads/sponsorships/${viewSponsorship.sponsorshipImage}`}
+                  src={`https://oneheart.team/uploads/sponsorships/${viewSponsorship.sponsorshipImage}`}
                   alt={viewSponsorship.title}
                   className="img-fluid"
                   style={{ maxHeight: "300px", objectFit: "contain" }}

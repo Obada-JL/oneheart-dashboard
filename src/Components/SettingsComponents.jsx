@@ -70,7 +70,7 @@ const SettingsComponents = () => {
             activeTab === "programs" ? "programs" : "about-us";
 
       console.log(`Fetching items from endpoint: ${endpoint}`);
-      const response = await axios.get(`http://localhost:3500/api/${endpoint}`);
+      const response = await axios.get(`https://oneheart.team/api/${endpoint}`);
       console.log(`Raw ${activeTab} data:`, response.data);
 
       if (activeTab === "about") {
@@ -339,14 +339,14 @@ const SettingsComponents = () => {
           let response;
           if (modalMode === "add") {
             console.log("Creating new program");
-            response = await axios.post(`http://localhost:3500/api/${endpoint}`, formData, {
+            response = await axios.post(`https://oneheart.team/api/${endpoint}`, formData, {
               headers: { 'Content-Type': 'multipart/form-data' }
             });
             console.log("Add program response:", response.data);
           } else {
             console.log("Updating program with ID:", selectedItem._id);
             response = await axios.put(
-              `http://localhost:3500/api/${endpoint}/${selectedItem._id}`,
+              `https://oneheart.team/api/${endpoint}/${selectedItem._id}`,
               formData,
               {
                 headers: { 'Content-Type': 'multipart/form-data' }
@@ -517,14 +517,14 @@ const SettingsComponents = () => {
         try {
           if (modalMode === "add") {
             console.log("Creating new about us entry");
-            const response = await axios.post(`http://localhost:3500/api/${endpoint}`, formData, {
+            const response = await axios.post(`https://oneheart.team/api/${endpoint}`, formData, {
               headers: { 'Content-Type': 'multipart/form-data' }
             });
             console.log("Create response:", response.data);
           } else {
             console.log("Updating about us entry");
             const response = await axios.put(
-              `http://localhost:3500/api/${endpoint}/${selectedItem._id}`,
+              `https://oneheart.team/api/${endpoint}/${selectedItem._id}`,
               formData,
               {
                 headers: { 'Content-Type': 'multipart/form-data' }
@@ -630,14 +630,14 @@ const SettingsComponents = () => {
           // Send the request
           if (modalMode === "add") {
             console.log("Creating new slider with formData:", Object.fromEntries(formData));
-            const response = await axios.post(`http://localhost:3500/api/${endpoint}`, formData, {
+            const response = await axios.post(`https://oneheart.team/api/${endpoint}`, formData, {
               headers: { 'Content-Type': 'multipart/form-data' }
             });
             console.log("Add slider response:", response.data);
           } else {
             console.log("Updating slider with ID:", selectedItem._id);
             const response = await axios.put(
-              `http://localhost:3500/api/${endpoint}/${selectedItem._id}`,
+              `https://oneheart.team/api/${endpoint}/${selectedItem._id}`,
               formData,
               {
                 headers: { 'Content-Type': 'multipart/form-data' }
@@ -685,13 +685,13 @@ const SettingsComponents = () => {
         // Add the missing API call for counters
         try {
           if (modalMode === "add") {
-            const response = await axios.post(`http://localhost:3500/api/${endpoint}`, formData, {
+            const response = await axios.post(`https://oneheart.team/api/${endpoint}`, formData, {
               headers: { 'Content-Type': 'multipart/form-data' }
             });
             console.log("Add counter response:", response.data);
           } else {
             const response = await axios.put(
-              `http://localhost:3500/api/${endpoint}/${selectedItem._id}`,
+              `https://oneheart.team/api/${endpoint}/${selectedItem._id}`,
               formData,
               {
                 headers: { 'Content-Type': 'multipart/form-data' }
@@ -738,8 +738,8 @@ const SettingsComponents = () => {
 
         // For about-us, we don't need the ID as there's only one entry
         const url = activeTab === "about"
-          ? `http://localhost:3500/api/${endpoint}`
-          : `http://localhost:3500/api/${endpoint}/${id}`;
+          ? `https://oneheart.team/api/${endpoint}`
+          : `https://oneheart.team/api/${endpoint}/${id}`;
 
         console.log("Deleting item at URL:", url);
         await axios.delete(url);
@@ -761,7 +761,7 @@ const SettingsComponents = () => {
       <div className="mb-2">
         <p className="mb-1">Current Image:</p>
         <img
-          src={`http://localhost:3500/uploads/aboutUs/${section.photo}`}
+          src={`https://oneheart.team/uploads/aboutUs/${section.photo}`}
           alt={`${sectionName} Image`}
           style={{ width: '100px', height: '100px', objectFit: 'cover' }}
           className="border"
@@ -781,7 +781,7 @@ const SettingsComponents = () => {
           {selectedItem.aboutUs.photos.map((photo, index) => (
             <img
               key={index}
-              src={`http://localhost:3500/uploads/aboutUs/${photo}`}
+              src={`https://oneheart.team/uploads/aboutUs/${photo}`}
               alt={`About Us Photo ${index + 1}`}
               style={{ width: '100px', height: '100px', objectFit: 'cover' }}
               className="border"
@@ -806,7 +806,7 @@ const SettingsComponents = () => {
                     selectedItem.sliderImage.map((img, index) => (
                       <img
                         key={index}
-                        src={`http://localhost:3500/uploads/sliderImages/${img}`}
+                        src={`https://oneheart.team/uploads/sliderImages/${img}`}
                         alt={`سلايد ${index + 1}`}
                         style={{
                           width: "80px",
@@ -817,7 +817,7 @@ const SettingsComponents = () => {
                     ))
                   ) : (
                     <img
-                      src={`http://localhost:3500/uploads/sliderImages/${selectedItem.sliderImage}`}
+                      src={`https://oneheart.team/uploads/sliderImages/${selectedItem.sliderImage}`}
                       alt="سلايد"
                       style={{
                         width: "80px",
@@ -985,7 +985,7 @@ const SettingsComponents = () => {
                     {link.icon && (typeof link.icon === 'string' || link.iconPreview) && (
                       <div className="mb-2">
                         <img
-                          src={link.iconPreview || `http://localhost:3500/uploads/payment-icons/${link.icon}`}
+                          src={link.iconPreview || `https://oneheart.team/uploads/payment-icons/${link.icon}`}
                           alt="Payment Icon"
                           style={{ height: "40px", marginRight: "10px" }}
                         />
@@ -1568,7 +1568,7 @@ const SettingsComponents = () => {
                     {link.icon && (typeof link.icon === 'string' || link.iconPreview) && (
                       <div className="mb-2">
                         <img
-                          src={link.iconPreview || `http://localhost:3500/uploads/payment-icons/${link.icon}`}
+                          src={link.iconPreview || `https://oneheart.team/uploads/payment-icons/${link.icon}`}
                           alt="Payment Icon"
                           style={{ height: "40px", marginRight: "10px" }}
                         />
@@ -1695,7 +1695,7 @@ const SettingsComponents = () => {
                       {link.icon && (
                         <div className="me-2">
                           <img
-                            src={`http://localhost:3500/uploads/payment-icons/${link.icon}`}
+                            src={`https://oneheart.team/uploads/payment-icons/${link.icon}`}
                             alt={link.methodName}
                             style={{ height: "30px", objectFit: "contain" }}
                             onError={(e) => {
@@ -1801,7 +1801,7 @@ const SettingsComponents = () => {
                             {item.sliderImage.map((img, index) => (
                               <img
                                 key={index}
-                                src={`http://localhost:3500/uploads/sliderImages/${img}`}
+                                src={`https://oneheart.team/uploads/sliderImages/${img}`}
                                 alt=""
                                 style={{
                                   width: "40px",
@@ -1813,7 +1813,7 @@ const SettingsComponents = () => {
                           </div>
                         ) : activeTab === "programs" ? (
                           <img
-                            src={`http://localhost:3500/uploads/programs/${item.image}`}
+                            src={`https://oneheart.team/uploads/programs/${item.image}`}
                             alt=""
                             style={{
                               width: "50px",
@@ -1823,7 +1823,7 @@ const SettingsComponents = () => {
                           />
                         ) : (
                           <img
-                            src={`http://localhost:3500/uploads/${activeTab === "sliders" ? "sliderImages" : "counterImages"}/${activeTab === "sliders" ? item.sliderImage : item.counterImage}`}
+                            src={`https://oneheart.team/uploads/${activeTab === "sliders" ? "sliderImages" : "counterImages"}/${activeTab === "sliders" ? item.sliderImage : item.counterImage}`}
                             alt=""
                             style={{
                               width: "50px",
@@ -1913,7 +1913,7 @@ const SettingsComponents = () => {
                         <tr key={item._id}>
                           <td style={{ width: "100px" }}>
                             <img
-                              src={`http://localhost:3500/uploads/programs/${item.image}`}
+                              src={`https://oneheart.team/uploads/programs/${item.image}`}
                               alt={item.titleAr}
                               className="img-fluid"
                               style={{ maxWidth: "100px", height: "60px", objectFit: "cover" }}
@@ -1996,7 +1996,7 @@ const SettingsComponents = () => {
                           {viewItem.aboutUs.photos.map((photo, index) => (
                             <div key={index} className="me-2 mb-2">
                               <img
-                                src={`http://localhost:3500/uploads/aboutUs/${photo}`}
+                                src={`https://oneheart.team/uploads/aboutUs/${photo}`}
                                 alt={`صورة ${index + 1}`}
                                 style={{ width: "100px", height: "100px", objectFit: "cover" }}
                               />
@@ -2015,7 +2015,7 @@ const SettingsComponents = () => {
                       <div className="mt-3">
                         <h6 className="mb-2">الصورة</h6>
                         <img
-                          src={`http://localhost:3500/uploads/aboutUs/${viewItem.goal.photo}`}
+                          src={`https://oneheart.team/uploads/aboutUs/${viewItem.goal.photo}`}
                           alt="صورة الهدف"
                           style={{ maxWidth: "200px", maxHeight: "200px", objectFit: "contain" }}
                         />
@@ -2031,7 +2031,7 @@ const SettingsComponents = () => {
                       <div className="mt-3">
                         <h6 className="mb-2">الصورة</h6>
                         <img
-                          src={`http://localhost:3500/uploads/aboutUs/${viewItem.vision.photo}`}
+                          src={`https://oneheart.team/uploads/aboutUs/${viewItem.vision.photo}`}
                           alt="صورة الرؤية"
                           style={{ maxWidth: "200px", maxHeight: "200px", objectFit: "contain" }}
                         />
@@ -2047,7 +2047,7 @@ const SettingsComponents = () => {
                       <div className="mt-3">
                         <h6 className="mb-2">الصورة</h6>
                         <img
-                          src={`http://localhost:3500/uploads/aboutUs/${viewItem.message.photo}`}
+                          src={`https://oneheart.team/uploads/aboutUs/${viewItem.message.photo}`}
                           alt="صورة الرسالة"
                           style={{ maxWidth: "200px", maxHeight: "200px", objectFit: "contain" }}
                         />
@@ -2063,7 +2063,7 @@ const SettingsComponents = () => {
                       <div className="mt-3">
                         <h6 className="mb-2">الصورة</h6>
                         <img
-                          src={`http://localhost:3500/uploads/aboutUs/${viewItem.values.photo}`}
+                          src={`https://oneheart.team/uploads/aboutUs/${viewItem.values.photo}`}
                           alt="صورة القيم"
                           style={{ maxWidth: "200px", maxHeight: "200px", objectFit: "contain" }}
                         />
@@ -2084,7 +2084,7 @@ const SettingsComponents = () => {
                           {viewItem.aboutUs.photos.map((photo, index) => (
                             <div key={index} className="me-2 mb-2">
                               <img
-                                src={`http://localhost:3500/uploads/aboutUs/${photo}`}
+                                src={`https://oneheart.team/uploads/aboutUs/${photo}`}
                                 alt={`Photo ${index + 1}`}
                                 style={{ width: "100px", height: "100px", objectFit: "cover" }}
                               />
@@ -2103,7 +2103,7 @@ const SettingsComponents = () => {
                       <div className="mt-3">
                         <h6 className="mb-2">Photo</h6>
                         <img
-                          src={`http://localhost:3500/uploads/aboutUs/${viewItem.goal.photo}`}
+                          src={`https://oneheart.team/uploads/aboutUs/${viewItem.goal.photo}`}
                           alt="Goal photo"
                           style={{ maxWidth: "200px", maxHeight: "200px", objectFit: "contain" }}
                         />
@@ -2119,7 +2119,7 @@ const SettingsComponents = () => {
                       <div className="mt-3">
                         <h6 className="mb-2">Photo</h6>
                         <img
-                          src={`http://localhost:3500/uploads/aboutUs/${viewItem.vision.photo}`}
+                          src={`https://oneheart.team/uploads/aboutUs/${viewItem.vision.photo}`}
                           alt="Vision photo"
                           style={{ maxWidth: "200px", maxHeight: "200px", objectFit: "contain" }}
                         />
@@ -2135,7 +2135,7 @@ const SettingsComponents = () => {
                       <div className="mt-3">
                         <h6 className="mb-2">Photo</h6>
                         <img
-                          src={`http://localhost:3500/uploads/aboutUs/${viewItem.message.photo}`}
+                          src={`https://oneheart.team/uploads/aboutUs/${viewItem.message.photo}`}
                           alt="Message photo"
                           style={{ maxWidth: "200px", maxHeight: "200px", objectFit: "contain" }}
                         />
@@ -2151,7 +2151,7 @@ const SettingsComponents = () => {
                       <div className="mt-3">
                         <h6 className="mb-2">Photo</h6>
                         <img
-                          src={`http://localhost:3500/uploads/aboutUs/${viewItem.values.photo}`}
+                          src={`https://oneheart.team/uploads/aboutUs/${viewItem.values.photo}`}
                           alt="Values photo"
                           style={{ maxWidth: "200px", maxHeight: "200px", objectFit: "contain" }}
                         />
@@ -2169,7 +2169,7 @@ const SettingsComponents = () => {
                     {viewItem.sliderImage.map((img, index) => (
                       <img
                         key={index}
-                        src={`http://localhost:3500/uploads/sliderImages/${img}`}
+                        src={`https://oneheart.team/uploads/sliderImages/${img}`}
                         alt={`Slide ${index + 1}`}
                         style={{ maxHeight: "200px", objectFit: "contain" }}
                         className="border"
@@ -2178,7 +2178,7 @@ const SettingsComponents = () => {
                   </div>
                 ) : (
                   <img
-                    src={`http://localhost:3500/uploads/sliderImages/${viewItem.sliderImage}`}
+                    src={`https://oneheart.team/uploads/sliderImages/${viewItem.sliderImage}`}
                     alt="Slider"
                     style={{ maxHeight: "200px", objectFit: "contain" }}
                     className="border"
@@ -2221,7 +2221,7 @@ const SettingsComponents = () => {
             <div>
               <div className="text-center mb-4">
                 <img
-                  src={`http://localhost:3500/uploads/programs/${viewItem.image}`}
+                  src={`https://oneheart.team/uploads/programs/${viewItem.image}`}
                   alt={viewItem.titleAr}
                   style={{ maxWidth: "100%", maxHeight: "300px", objectFit: "contain" }}
                 />

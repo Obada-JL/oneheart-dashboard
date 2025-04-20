@@ -32,7 +32,7 @@ export default function CompletedProjects() {
     setLoading(true);
     try {
       const response = await axios.get(
-        "http://localhost:3500/api/completed-projects"
+        "https://oneheart.team/api/completed-projects"
       );
       setProjects(response.data);
     } catch (error) {
@@ -235,8 +235,8 @@ export default function CompletedProjects() {
       }
 
       const url = modalMode === "add"
-        ? "http://localhost:3500/api/completed-projects"
-        : `http://localhost:3500/api/completed-projects/${selectedProject._id}`;
+        ? "https://oneheart.team/api/completed-projects"
+        : `https://oneheart.team/api/completed-projects/${selectedProject._id}`;
 
       const response = await axios({
         method: modalMode === "add" ? "post" : "put",
@@ -285,7 +285,7 @@ export default function CompletedProjects() {
       setLoading(true);
       try {
         await axios.delete(
-          `http://localhost:3500/api/completed-projects/${id}`
+          `https://oneheart.team/api/completed-projects/${id}`
         );
         await Swal.fire({
           title: 'تم الحذف!',
@@ -383,7 +383,7 @@ export default function CompletedProjects() {
                 <tr key={project._id}>
                   <td>
                     <img
-                      src={`http://localhost:3500/uploads/completed-projects/${project.image}`}
+                      src={`https://oneheart.team/uploads/completed-projects/${project.image}`}
                       alt={project.title}
                       style={{ width: "50px", height: "50px", objectFit: "cover" }}
                     />
@@ -697,7 +697,7 @@ export default function CompletedProjects() {
                           {link.icon && typeof link.icon === "string" && (
                             <div className="mt-2">
                               <img
-                                src={`http://localhost:3500/uploads/payment-icons/${link.icon}`}
+                                src={`https://oneheart.team/uploads/payment-icons/${link.icon}`}
                                 alt="Payment icon"
                                 style={{ height: "30px", objectFit: "contain" }}
                               />
@@ -762,7 +762,7 @@ export default function CompletedProjects() {
             <div className="view-project-details">
               <div className="text-center mb-4">
                 <img
-                  src={`http://localhost:3500/uploads/completed-projects/${viewProject.image}`}
+                  src={`https://oneheart.team/uploads/completed-projects/${viewProject.image}`}
                   alt={viewProject.title}
                   className="img-fluid"
                   style={{ maxHeight: "300px", objectFit: "contain" }}

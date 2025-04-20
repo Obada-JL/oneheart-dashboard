@@ -31,7 +31,7 @@ const AdminRoute = ({ children }) => {
           return;
         }
 
-        const response = await axios.get(`http://localhost:3500/api/users/${userId}`, {
+        const response = await axios.get(`https://oneheart.team/api/users/${userId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
